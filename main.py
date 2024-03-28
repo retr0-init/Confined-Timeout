@@ -1,6 +1,5 @@
 '''
-Discord-Bot-Module template. For detailed usages,
- check https://interactions-py.github.io/interactions.py/
+Confined Timeout
 
 Copyright (C) 2024  __retr0.init__
 
@@ -18,40 +17,99 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 import interactions
-# Use the following method to import the internal module in the current same directory
-from . import internal_t
 # Import the os module to get the parent path to the local files
 import os
 # aiofiles module is recommended for file operation
 import aiofiles
-# You can listen to the interactions.py event
-from interactions.api.events import MessageCreate
-# You can create a background task
-from interactions import Task, IntervalTrigger
+
+from enum import Enum, unique
+
+import sqlalchemy
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
+
+engine: AsyncEngine = create_async_engine(f"sqlite+aiosqlite:///{os.path.dirname(__file__)}/confined_timeout_db.db")
+
+@sqlalchemy.event.listens_for(engine.sync_engine, "connect")
+def do_connect(dbapi_connection, connection_record):
+    dbapi_connection.isolation_level = None
+
+@sqlalchemy.event.listens_for(engine.sync_engine, "begin")
+def do_begin(conn):
+    conn.exec_driver_sql("BEGIN")
+
+metaObj: sqlalchemy.MetaData = sqlalchemy.MetaData()
+metaObj.reflect(engine)
+GlobalAdminDB: sqlalchemy.Table = sqlalchemy.Table(
+    "GlobalAdminDB", metaObj,
+    sqlalchemy.Column("UID", sqlalchemy.BigInteger, autoincrement=True, primary_key=True),
+    sqlalchemy.Column("id", sqlalchemy.BigInteger, nullable=False),
+    sqlalchemy.Column("type", sqlalchemy.Integer, nullable=False)
+)
+ModeratorDB: sqlalchemy.Table = sqlalchemy.Table(
+    "ModeratorDB", metaObj,
+    sqlalchemy.Column("UID", sqlalchemy.BigInteger, autoincrement=True, primary_key=True),
+    sqlalchemy.Column("id", sqlalchemy.BigInteger, nullable=False),
+    sqlalchemy.Column("type", sqlalchemy.Integer, nullable=False),
+    sqlalchemy.Column("channel_id", sqlalchemy.BigInteger, nullable=False)
+)
+PrisonerDB: sqlalchemy.Table = sqlalchemy.Table(
+    "PrinsonerDB", metaObj,
+    sqlalchemy.Column("UID", sqlalchemy.BigInteger, autoincrement=True, primary_key=True),
+    sqlalchemy.Column("id", sqlalchemy.BigInteger, nullable=False),
+    sqlalchemy.Column("release_datetime", sqlalchemy.DateTime, nullable=False),
+    sqlalchemy.Column("channel_id", sqlalchemy.BigInteger, nullable=False)
+)
+metaObj.create_all(engine)
+
+@unique
+class MRCTType(int, Enum):
+    USER = 1
+    ROLE = 2
 
 '''
-Replace the ModuleName with any name you'd like
+Confined Timeout Module
 '''
-class ModuleName(interactions.Extension):
+class ModuleRetr0initConfinedTimeout(interactions.Extension):
     module_base: interactions.SlashCommand = interactions.SlashCommand(
-        name="replace_your_command_base_here",
-        description="Replace here for the base command descriptions"
+        name="confined_timeout",
+        description="Confined timeout"
     )
-    module_group: interactions.SlashCommand = module_base.group(
-        name="replace_your_command_group_here",
-        description="Replace here for the group command descriptions"
+    module_group_setting: interactions.SlashCommand = module_base.group(
+        name="setting",
+        description="Settings of the Confined Timeout system"
     )
 
-    @module_group.subcommand("ping", sub_cmd_description="Replace the description of this command")
+    '''
+    Check whether the person has the global admin permission to run the command
+    '''
+    async def my_admin_check(ctx: interactions.BaseContext):
+        res: bool = await interactions.is_owner()(ctx)
+
+        return res
+
+    '''
+    Check whether the member has the channel moderator permission to run the command
+    '''
+    async def my_admin_check(ctx: interactions.BaseContext):
+        return True
+
+    @module_group_setting.subcommand("set_global_admin", sub_cmd_description="Set the Global Admin")
     @interactions.slash_option(
-        name = "option_name",
-        description = "Option description",
+        name = "set_type",
+        description = "Type of the admin",
         required = True,
-        opt_type = interactions.OptionType.STRING
+        opt_type = interactions.OptionType.INTEGER,
+        choices = [
+            interactions.SlashCommandChoice(name="User", value=MRCTType.USER),
+            interactions.SlashCommandChoice(name="Role", value=MRCTType.ROLE)
+        ]
     )
-    async def module_group_ping(self, ctx: interactions.SlashContext, option_name: str):
-        await ctx.send(f"Pong {option_name}!")
-        internal_t.internal_t_testfunc()
+    async def module_group_setting_setGlobalAdmin(self, ctx: interactions.SlashContext, set_type: int):
+        '''
+        Pop a User Select Menu ephemeral to choose. It will disappear once selected.
+        It will check whether the user or role is capable of the admin
+        '''
+        await ctx.send(f"Pong {set_type}!")
 
     @module_base.subcommand("pong", sub_cmd_description="Replace the description of this command")
     @interactions.slash_option(
@@ -60,31 +118,5 @@ class ModuleName(interactions.Extension):
         required = True,
         opt_type = interactions.OptionType.STRING
     )
-    async def module_group_pong(self, ctx: interactions.SlashContext, option_name: str):
-        # The local file path is inside the directory of the module's main script file
-        async with aiofiles.open(f"{os.path.dirname(__file__)}/example_file.txt") as afp:
-            file_content: str = await afp.read()
-        await ctx.send(f"Pong {option_name}!\nFile content: {file_content}")
-        internal_t.internal_t_testfunc()
-
-    @interactions.listen(MessageCreate)
-    async def on_messagecreate(self, event: MessageCreate):
-        '''
-        Event listener when a new message is created
-        '''
-        print(f"User {event.message.author.display_name} sent '{event.message.content}'")
-
-    # You can even create a background task to run as you wish.
-    # Refer to https://interactions-py.github.io/interactions.py/Guides/40%20Tasks/ for guides
-    # Refer to https://interactions-py.github.io/interactions.py/API%20Reference/API%20Reference/models/Internal/tasks/ for detailed APIs
-    @Task.create(IntervalTrigger(minutes=1))
-    async def task_everyminute(self):
-        channel: interactions.TYPE_MESSAGEABLE_CHANNEL = self.bot.get_guild(1234567890).get_channel(1234567890)
-        await channel.send("Background task send every one minute")
-        print("Background Task send every one minute")
-
-    # The command to start the task
-    @module_base.subcommand("start_task", sub_cmd_description="Start the background task")
-    async def module_base_starttask(self, ctx: interactions.SlashContext):
-        self.task_everyminute.start()
-        await ctx.send("Task started")
+    async def module_base_pong(self, ctx: interactions.SlashContext, option_name: str):
+        await ctx.send(f"Pong {option_name}!")

@@ -1,0 +1,2 @@
+sqlalchemy>=2.0.29
+aiosqlite>=0.20.0
