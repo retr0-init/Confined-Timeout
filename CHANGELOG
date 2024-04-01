@@ -1,3 +1,7 @@
 # 20240328
 - Added Database definition
 - Updated `README.md`.
+
+# 20240401
+- Added Permission Addition & Deletion Logics
+- Updated the database to ORM
