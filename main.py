@@ -169,6 +169,16 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             if cdt >= p.release_datatime:
                 # Release the prinsoner
                 await self.release_prinsoner(p)
+    
+    def drop(self):
+        asyncio.create_task(self.async_drop())
+        super().drop()
+    
+    async def async_drop(self):
+        '''
+        Dispose the Database Engine connection
+        '''
+        await engine.dispose()
 
     async def release_prinsoner(self, prisoner: Prisoner) -> None:
         if prisoner not in prisoners:
