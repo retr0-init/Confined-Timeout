@@ -27,7 +27,7 @@ import asyncio
 from enum import Enum, unique
 from dataclasses import dataclass
 import datetime
-from typing import Union
+from typing import Union, cast, Callable, Awaitable
 
 import sqlalchemy
 from sqlalchemy import select as sqlselect
@@ -75,6 +75,62 @@ class Prisoner:
     release_datatime: datetime.datetime
     channel_id: int
 
+GLOBAL_ADMIN_USER_CUSTOM_ID: str = "retr0init_confined_timeout_GlobalAdmin_user"
+GLOBAL_ADMIN_ROLE_CUSTOM_ID: str = "retr0init_confined_timeout_GlobalAdmin_role"
+CHANNEL_MODERATOR_USER_CUSTOM_ID: str = "retr0init_confined_timeout_ChannelModerator_user"
+CHANNEL_MODERATOR_ROLE_CUSTOM_ID: str = "retr0init_confined_timeout_ChannelModerator_role"
+TIMEOUT_DIALOG_CUSTOM_ID: str = "retr0init_confined_timeout_TimeoutDialog"
+
+global_admins: list[GlobalAdmin] = []
+channel_moderators: list[ChannelModerator] = []
+prisoners: list[Prisoner] = []
+
+async def my_admin_check(ctx: interactions.BaseContext) -> bool:
+    '''
+    Check whether the person has the global admin permission to run the command
+    '''
+    res: bool = await interactions.is_owner()(ctx)
+    gadmin_user: GlobalAdmin = GlobalAdmin(ctx.author.id, MRCTType.USER)
+    res_user: bool = gadmin_user in global_admins
+    res_role: bool = any(map(lambda x: ctx.author.has_role(x.id) if x.type == MRCTType.ROLE else False, global_admins))
+
+    return res or res_user or res_role
+
+async def my_channel_moderator_check(ctx: interactions.BaseContext) -> bool:
+    '''
+    Check whether the member has the channel moderator permission to run the command
+    '''
+    channel_id: int = ctx.channel.id if not hasattr(ctx.channel, "parent_channel") else ctx.channel.parent_channel.id
+    cmod_user: ChannelModerator = ChannelModerator(
+        ctx.author.id,
+        MRCTType.USER,
+        channel_id
+    )
+    res_user: bool = cmod_user in channel_moderators
+    res_role: bool = any(map(
+        lambda x: ctx.author.has_role(x.id) if x.type == MRCTType.ROLE else False,
+        (_ for _ in channel_moderators if _.channel_id == channel_id)
+    ))
+    return res_user or res_role
+
+async def mycheck_or(*check_funcs: Callable[..., Awaitable[bool]]) -> Callable[..., Awaitable[bool]]:
+    async def func(ctx: interactions.BaseContext) -> bool:
+        for check_func in check_funcs:
+            if await check_func(ctx):
+                return True
+        return False
+
+    return func
+
+async def mycheck_and(*check_funcs: Callable[..., Awaitable[bool]]) -> Callable[..., Awaitable[bool]]:
+    async def func(ctx: interactions.BaseContext) -> bool:
+        for check_func in check_funcs:
+            if not await check_func(ctx):
+                return False
+        return True
+
+    return func
+
 '''
 Confined Timeout Module
 '''
@@ -87,14 +143,11 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         name="setting",
         description="Settings of the Confined Timeout system"
     )
-    global_admins: list[GlobalAdmin] = []
-    channel_moderators: list[ChannelModerator] = []
-    prisoners: list[Prisoner] = []
 
     def __init__(self, bot):
         asyncio.create_task(self.async_init())
 
-    async def async_init(self):
+    async def async_init(self) -> None:
         '''Read all data into local list'''
         async with engine.begin() as conn:
             await conn.run_sync(DBBase.metadata.create_all)
@@ -103,22 +156,22 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             cms = await conn.execute(sqlselect(ModeratorDB))
             ps  = await conn.execute(sqlselect(PrisonerDB))
         for ga in gas:
-            self.global_admins.append(GlobalAdmin(ga.id, ga.type))
+            global_admins.append(GlobalAdmin(ga.id, ga.type))
         for cm in cms:
-            self.channel_moderators.append(ChannelModerator(cm.id, cm.type, cm.channel_id))
+            channel_moderators.append(ChannelModerator(cm.id, cm.type, cm.channel_id))
         for p in ps:
-            self.prisoners.append(Prisoner(p.id, p.release_datatime, p.channel_id))
+            prisoners.append(Prisoner(p.id, p.release_datatime, p.channel_id))
 
-    async def async_start(self):
+    async def async_start(self) -> None:
         await asyncio.sleep(30)
         cdt: datetime.datetime = datetime.datetime.now()
-        for p in self.prisoners:
+        for p in prisoners:
             if cdt >= p.release_datatime:
                 # Release the prinsoner
                 await self.release_prinsoner(p)
 
     async def release_prinsoner(self, prisoner: Prisoner) -> None:
-        if prisoner not in self.prisoners:
+        if prisoner not in prisoners:
             return
         channel: interactions.GuildChannel = await self.bot.fetch_channel(prisoner.channel_id)
         user: interactions.User = await self.bot.fetch_user(prisoner.id)
@@ -127,7 +180,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         except interactions.errors.Forbidden:
             print("The bot needs to have enough permissions!")
             return
-        self.prisoners.remove(prisoner)
+        prisoners.remove(prisoner)
         async with Session() as session:
             await session.execute(
                 sqldelete(PrisonerDB).
@@ -138,10 +191,10 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             )
             await session.commit()
 
-    def check_prisoner(self, prisoner_member: interactions.Member, duration_minutes: int, channel: Union[interactions.GuildChannel, interactions.ThreadChannel]) -> bool, Prisoner:
+    def check_prisoner(self, prisoner_member: interactions.Member, duration_minutes: int, channel: Union[interactions.GuildChannel, interactions.ThreadChannel]) -> tuple[bool, Prisoner]:
         channel_id: int = channel.id if not hasattr(channel, "parent_channel") else channel.parent_channel.id
         prisoner: Prisoner = Prisoner(prisoner_member.id, datetime.datetime.now() + datetime.timedelta(minutes=duration_minutes), channel_id)
-        cp: list[Prisoner] = [p for p in self.prisoners if p.id == prisoner.id and p.channel_id == prisoner.channel_id]
+        cp: list[Prisoner] = [p for p in prisoners if p.id == prisoner.id and p.channel_id == prisoner.channel_id]
         return len(cp) > 0, prisoner
 
     async def jail_prisoner(self, prisoner_member: interactions.Member, duration_minutes: int, channel: Union[interactions.GuildChannel, interactions.ThreadChannel]) -> bool:
@@ -184,7 +237,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         except interactions.errors.Forbidden:
             print("The bot needs to have enough permissions!")
             return False
-        self.prisoners.append(prisoner)
+        prisoners.append(prisoner)
         async with Session() as session:
             session.add(PrisonerDB(
                 id = prisoner.id,
@@ -197,21 +250,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         await self.release_prinsoner(prinsoner=prisoner)
         return True
 
-    '''
-    Check whether the person has the global admin permission to run the command
-    '''
-    #TODO
-    async def my_admin_check(ctx: interactions.BaseContext):
-        res: bool = await interactions.is_owner()(ctx)
-
-        return res
-
-    '''
-    Check whether the member has the channel moderator permission to run the command
-    '''
-    #TODO
-    async def my_channel_moderator_check(ctx: interactions.BaseContext):
-        return True
+    
 
     @module_group_setting.subcommand("set_global_admin", sub_cmd_description="Set the Global Admin")
     @interactions.slash_option(
@@ -225,12 +264,32 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         ]
     )
     @interactions.check(my_admin_check)
-    async def module_group_setting_setGlobalAdmin(self, ctx: interactions.SlashContext, set_type: int):
+    async def module_group_setting_setGlobalAdmin(self, ctx: interactions.SlashContext, set_type: int) -> None:
         '''
         Pop a User Select Menu ephemeral to choose. It will disappear once selected.
         It will check whether the user or role is capable of the admin
         '''
-        await ctx.send(f"Pong {set_type}!")
+        component_user: interactions.UserSelectMenu = interactions.UserSelectMenu(
+            custom_id=GLOBAL_ADMIN_USER_CUSTOM_ID,
+            placeholder="Select the user for global admin",
+            max_values=25,
+            default_values=[ctx.guild.get_member(_.id) for _ in global_admins if _.type == MRCTType.USER]
+        )
+        component_role: interactions.RoleSelectMenu = interactions.RoleSelectMenu(
+            custom_id=GLOBAL_ADMIN_ROLE_CUSTOM_ID,
+            placeholder="Select the role for global admin",
+            max_values=25,
+            default_values=[ctx.guild.get_role(_.id) for _ in global_admins if _.type == MRCTType.ROLE]
+        )
+        match set_type:
+            case MRCTType.USER:
+                await ctx.send(components=[component_user])
+            case MRCTType.ROLE:
+                await ctx.send(components=[component_role])
+
+    #TODO callback of component user
+    #TODO callback of component role
+    #TODO modify the original library code: https://github.com/interactions-py/interactions.py/pull/1654
 
     @module_base.subcommand("pong", sub_cmd_description="Replace the description of this command")
     @interactions.slash_option(
@@ -241,7 +300,3 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
     )
     async def module_base_pong(self, ctx: interactions.SlashContext, option_name: str):
         await ctx.send(f"Pong {option_name}!")
-#TODO TIMEOUT Check whether the channel is ForumChannel->Also prevent creating posts
-#TODO SETTING Check whether the channel is ForumPost->Find Parent (i.e. ForumChannel)
-#TODO Load parameters from database on loading. (Remember async begin does not work before starting synchronously)
-## https://interactions-py.github.io/interactions.py/Guides/20%20Extensions/#__tabbed_2_1

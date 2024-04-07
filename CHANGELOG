@@ -5,3 +5,7 @@
 # 20240401
 - Added Permission Addition & Deletion Logics
 - Updated the database to ORM
+
+# 20240407
+- Added Command Permission Checks
+- Create the Global Admin checking command
