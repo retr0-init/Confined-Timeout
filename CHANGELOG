@@ -12,6 +12,8 @@
 - Dispose Database connection upon extension unload (Clenaup)
 
 # 20240411
-- Added UserSelect component callback
+- Added GlobalAdmin UserSelect component callback
 - Fix database initialise system
-- Added RoleSelect component callback
+- Added GlobalAdmin RoleSelect component callback
+- Added channel moderator setting command
+- Component callback placeholders

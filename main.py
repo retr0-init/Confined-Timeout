@@ -265,7 +265,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
     @module_group_setting.subcommand("set_global_admin", sub_cmd_description="Set the Global Admin")
     @interactions.slash_option(
         name = "set_type",
-        description = "Type of the admin",
+        description = "Type of the admin. Select one of the options.",
         required = True,
         opt_type = interactions.OptionType.INTEGER,
         choices = [
@@ -276,29 +276,29 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
     @interactions.check(my_admin_check)
     async def module_group_setting_setGlobalAdmin(self, ctx: interactions.SlashContext, set_type: int) -> None:
         '''
-        Pop a User Select Menu ephemeral to choose. It will disappear once selected.
+        Pop a User/Role Select Menu ephemeral to choose. It will disappear once selected.
         It will check whether the user or role is capable of the admin
         '''
-        component_user: interactions.UserSelectMenu = interactions.UserSelectMenu(
-            custom_id=GLOBAL_ADMIN_USER_CUSTOM_ID,
-            placeholder="Select the user for global admin",
-            max_values=25,
-            default_values=[ctx.guild.get_member(_.id) for _ in global_admins if _.type == MRCTType.USER]
-        )
-        component_role: interactions.RoleSelectMenu = interactions.RoleSelectMenu(
-            custom_id=GLOBAL_ADMIN_ROLE_CUSTOM_ID,
-            placeholder="Select the role for global admin",
-            max_values=25,
-            default_values=[ctx.guild.get_role(_.id) for _ in global_admins if _.type == MRCTType.ROLE]
-        )
         match set_type:
             case MRCTType.USER:
+                component_user: interactions.UserSelectMenu = interactions.UserSelectMenu(
+                    custom_id=GLOBAL_ADMIN_USER_CUSTOM_ID,
+                    placeholder="Select the user for global admin",
+                    max_values=25,
+                    default_values=[ctx.guild.get_member(_.id) for _ in global_admins if _.type == MRCTType.USER]
+                )
                 await ctx.send("Set the global admin USER:", components=[component_user])
             case MRCTType.ROLE:
+                component_role: interactions.RoleSelectMenu = interactions.RoleSelectMenu(
+                    custom_id=GLOBAL_ADMIN_ROLE_CUSTOM_ID,
+                    placeholder="Select the role for global admin",
+                    max_values=25,
+                    default_values=[ctx.guild.get_role(_.id) for _ in global_admins if _.type == MRCTType.ROLE]
+                )
                 await ctx.send("Set the global admin ROLE:", components=[component_role])
 
     @interactions.component_callback(GLOBAL_ADMIN_USER_CUSTOM_ID)
-    async def callback_component_user(self, ctx: interactions.ComponentContext) -> None:
+    async def callback_setGA_component_user(self, ctx: interactions.ComponentContext) -> None:
         if await my_admin_check(ctx):
             message: interactions.Message = ctx.message
             msg_to_send: str = "Added global admin as a member:"
@@ -322,7 +322,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
 
     #TODO callback of component role
     @interactions.component_callback(GLOBAL_ADMIN_ROLE_CUSTOM_ID)
-    async def callback_component_role(self, ctx: interactions.ComponentContext) -> None:
+    async def callback_setGA_component_role(self, ctx: interactions.ComponentContext) -> None:
         if await my_admin_check(ctx):
             message: interactions.Message = ctx.message
             msg_to_send: str = "Added global admin as a role:"
@@ -344,12 +344,47 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
 
     #TODO modify the original library code: https://github.com/interactions-py/interactions.py/pull/1654
 
-    @module_base.subcommand("pong", sub_cmd_description="Replace the description of this command")
+    @module_group_setting.subcommand("set_channel_moderator", sub_cmd_description="Set the moderator in this channel")
     @interactions.slash_option(
-        name = "option_name",
-        description = "Option description",
+        name = "set_type",
+        description = "Type of the moderator. Select one of the options.",
         required = True,
-        opt_type = interactions.OptionType.STRING
+        opt_type = interactions.OptionType.INTEGER,
+        choices=[
+            interactions.SlashCommandChoice(name="User", value=MRCTType.USER),
+            interactions.SlashCommandChoice(name="Role", value=MRCTType.ROLE)
+        ]
     )
-    async def module_base_pong(self, ctx: interactions.SlashContext, option_name: str):
-        await ctx.send(f"Pong {option_name}!")
+    @interactions.check(my_admin_check)
+    async def module_group_setting_setChannelModerator(self, ctx: interactions.SlashContext, set_type: int) -> None:
+        '''
+        Pop a User/Role Select Menu ephemeral to choose. It will disappear once selected.
+        It will check whether the user or role is capable of the channel moderator
+        '''
+        match set_type:
+            case MRCTType.USER:
+                component_user: interactions.UserSelectMenu = interactions.UserSelectMenu(
+                    custom_id=CHANNEL_MODERATOR_USER_CUSTOM_ID,
+                    placeholder=f"Select the user moderator for {ctx.channel.name}",
+                    max_values=25,
+                    default_values=[ctx.guild.get_member(_.id) for _ in global_admins if _.type == MRCTType.USER]
+                )
+                await ctx.send(f"Set the `{ctx.channel.name}` moderator USER:", components=[component_user])
+            case MRCTType.ROLE:
+                component_role: interactions.RoleSelectMenu = interactions.RoleSelectMenu(
+                    custom_id=CHANNEL_MODERATOR_ROLE_CUSTOM_ID,
+                    placeholder=f"Select the role moderator for {ctx.channel.name}",
+                    max_values=25,
+                    default_values=[ctx.guild.get_role(_.id) for _ in global_admins if _.type == MRCTType.ROLE]
+                )
+                await ctx.send(f"Set the `{ctx.channel.name}` moderator ROLE:", components=[component_role])
+
+    #TODO make the component callback. This should also check the channel in addition to the user id
+    @interactions.component_callback(CHANNEL_MODERATOR_USER_CUSTOM_ID)
+    async def callback_setCM_component_user(self, ctx: interactions.ComponentContext):
+        raise NotImplementedError()
+
+    #TODO make the component callback. This should also check the channel in addition to the user id
+    @interactions.component_callback(CHANNEL_MODERATOR_ROLE_CUSTOM_ID)
+    async def callback_setCM_component_role(self, ctx: interactions.ComponentContext):
+        raise NotImplementedError()
