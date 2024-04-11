@@ -344,7 +344,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
 
     #TODO modify the original library code: https://github.com/interactions-py/interactions.py/pull/1654
 
-    @module_group_setting.subcommand("set_channel_moderator", sub_cmd_description="Set the moderator in this channel")
+    @module_group_setting.subcommand("set_moderator", sub_cmd_description="Set the moderator in this channel")
     @interactions.slash_option(
         name = "set_type",
         description = "Type of the moderator. Select one of the options.",
