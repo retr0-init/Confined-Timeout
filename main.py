@@ -301,9 +301,9 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
     async def callback_component_user(self, ctx: interactions.ComponentContext) -> None:
         if await my_admin_check(ctx):
             message: interactions.Message = ctx.message
-            msg_to_send: str = "Added global admin:"
+            msg_to_send: str = "Added global admin as a member:"
             for user in ctx.values:
-                cast(interactions.Member, user)
+                user = cast(interactions.Member, user)
                 if user.bot:
                     continue
                 _to_add: GlobalAdmin = GlobalAdmin(user.id, MRCTType.USER)
@@ -318,9 +318,30 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             await ctx.send(msg_to_send)
             await message.delete()
             return
-        await ctx.send("You do not the permission to do so!", ephemeral=True)
+        await ctx.send("You do not have the permission to do so!", ephemeral=True)
 
     #TODO callback of component role
+    @interactions.component_callback(GLOBAL_ADMIN_ROLE_CUSTOM_ID)
+    async def callback_component_role(self, ctx: interactions.ComponentContext) -> None:
+        if await my_admin_check(ctx):
+            message: interactions.Message = ctx.message
+            msg_to_send: str = "Added global admin as a role:"
+            for role in ctx.values:
+                role = cast(interactions.Role, role)
+                _to_add: GlobalAdmin = GlobalAdmin(role.id, MRCTType.ROLE)
+                if _to_add not in global_admins:
+                    global_admins.append(_to_add)
+                    async with Session() as conn:
+                        conn.add(
+                            GlobalAdminDB(id=_to_add.id, type=_to_add.type)
+                        )
+                        await conn.commit()
+                    msg_to_send += f"\n- {role.name} {role.mention}"
+            await ctx.send(msg_to_send)
+            await message.delete()
+            return
+        await ctx.send("You do not have the permission to do so!", ephemeral=True)
+
     #TODO modify the original library code: https://github.com/interactions-py/interactions.py/pull/1654
 
     @module_base.subcommand("pong", sub_cmd_description="Replace the description of this command")

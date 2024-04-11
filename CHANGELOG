@@ -14,3 +14,4 @@
 # 20240411
 - Added UserSelect component callback
 - Fix database initialise system
+- Added RoleSelect component callback
