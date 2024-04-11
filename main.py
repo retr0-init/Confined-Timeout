@@ -149,18 +149,18 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
 
     async def async_init(self) -> None:
         '''Read all data into local list'''
+        global global_admins
+        global channel_moderators
+        global prisoners
         async with engine.begin() as conn:
             await conn.run_sync(DBBase.metadata.create_all)
         async with Session() as conn:
             gas = await conn.execute(sqlselect(GlobalAdminDB))
             cms = await conn.execute(sqlselect(ModeratorDB))
             ps  = await conn.execute(sqlselect(PrisonerDB))
-        for ga in gas:
-            global_admins.append(GlobalAdmin(ga.id, ga.type))
-        for cm in cms:
-            channel_moderators.append(ChannelModerator(cm.id, cm.type, cm.channel_id))
-        for p in ps:
-            prisoners.append(Prisoner(p.id, p.release_datatime, p.channel_id))
+        global_admins = [GlobalAdmin(ga[0].id, ga[0].type) for ga in gas]
+        channel_moderators = [ChannelModerator(cm[0].id, cm[0].type, cm[0].channel_id) for cm in cms]
+        prisoners = [Prisoner(p[0].id, p[0].release_datatime, p[0].channel_id) for p in ps]
 
     async def async_start(self) -> None:
         await asyncio.sleep(30)
@@ -293,11 +293,33 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         )
         match set_type:
             case MRCTType.USER:
-                await ctx.send(components=[component_user])
+                await ctx.send("Set the global admin USER:", components=[component_user])
             case MRCTType.ROLE:
-                await ctx.send(components=[component_role])
+                await ctx.send("Set the global admin ROLE:", components=[component_role])
 
-    #TODO callback of component user
+    @interactions.component_callback(GLOBAL_ADMIN_USER_CUSTOM_ID)
+    async def callback_component_user(self, ctx: interactions.ComponentContext) -> None:
+        if await my_admin_check(ctx):
+            message: interactions.Message = ctx.message
+            msg_to_send: str = "Added global admin:"
+            for user in ctx.values:
+                cast(interactions.Member, user)
+                if user.bot:
+                    continue
+                _to_add: GlobalAdmin = GlobalAdmin(user.id, MRCTType.USER)
+                if _to_add not in global_admins:
+                    global_admins.append(_to_add)
+                    async with Session() as conn:
+                        conn.add(
+                            GlobalAdminDB(id=_to_add.id, type=_to_add.type)
+                        )
+                        await conn.commit()
+                    msg_to_send += f"\n- {user.display_name} {user.mention}"
+            await ctx.send(msg_to_send)
+            await message.delete()
+            return
+        await ctx.send("You do not the permission to do so!", ephemeral=True)
+
     #TODO callback of component role
     #TODO modify the original library code: https://github.com/interactions-py/interactions.py/pull/1654
 

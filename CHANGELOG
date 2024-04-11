@@ -10,3 +10,7 @@
 - Added Command Permission Checks
 - Create the Global Admin checking command
 - Dispose Database connection upon extension unload (Clenaup)
+
+# 20240411
+- Added UserSelect component callback
+- Fix database initialise system
