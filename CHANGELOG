@@ -17,3 +17,4 @@
 - Added GlobalAdmin RoleSelect component callback
 - Added channel moderator setting command
 - Component callback placeholders
+- Added a summary command in `README.md`

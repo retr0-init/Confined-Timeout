@@ -25,6 +25,7 @@
 - `/confined_timeout setting set_moderator`
 - `/confined_timeout setting remove_moderator`
 - `/confined_timeout setting view_moderator`
+- `/confined_timeout setting summary`
 - `/confined_timeout timeout <Member> <Minutes> [Hours] [Days]`
     - 菜单，弹窗输入信息。
 - `/confined_timeout release <Member>`
@@ -53,6 +54,7 @@ In contrast:
 - `/confined_timeout setting set_moderator`
 - `/confined_timeout setting remove_moderator`
 - `/confined_timeout setting view_moderator`
+- `/confined_timeout setting summary`
 - `/confined_timeout timeout <Member> <Minutes> <Hours> <Days>`
     - Context Menu, modal window to enter details
 - `/confined_timeout release <Member>`
