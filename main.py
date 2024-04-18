@@ -1,6 +1,7 @@
 '''
 Confined Timeout
 Main entry point.
+[WARNING] Modify the original library code: https://github.com/interactions-py/interactions.py/pull/1654
 
 Copyright (C) 2024  __retr0.init__
 
@@ -17,6 +18,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
+#WARNING Modify the original library code: https://github.com/interactions-py/interactions.py/pull/1654
 import interactions
 # Import the os module to get the parent path to the local files
 import os
@@ -144,6 +146,8 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         description="Settings of the Confined Timeout system"
     )
 
+    ################ Initial functions STARTS ################
+
     def __init__(self, bot):
         asyncio.create_task(self.async_init())
 
@@ -180,6 +184,9 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         '''
         await engine.dispose()
 
+    ################ Initial functions FINISH ################
+    ################ Utility functions STARTS ################
+
     async def release_prinsoner(self, prisoner: Prisoner) -> None:
         if prisoner not in prisoners:
             return
@@ -208,9 +215,26 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         return len(cp) > 0, prisoner
 
     async def jail_prisoner(self, prisoner_member: interactions.Member, duration_minutes: int, channel: Union[interactions.GuildChannel, interactions.ThreadChannel]) -> bool:
+        # Do not double jail existing prisoners
         existed, prisoner = self.check_prisoner(prisoner_member, duration_minutes, channel)
         if existed:
             return False
+
+        # Do not jail channel moderators themselves
+        channel_id: int = channel.id if not hasattr(channel, "parent_channel") else channel.parent_channel.id
+        cmod_user: ChannelModerator = ChannelModerator(
+            prisoner_member.id,
+            MRCTType.USER,
+            channel_id
+        )
+        res_user: bool = cmod_user in channel_moderators
+        res_role: bool = any(map(
+            lambda x: prisoner_member.has_role(x.id) if x.type == MRCTType.ROLE else False,
+            (_ for _ in channel_moderators if _.channel_id == channel_id)
+        ))
+        if res_user or res_role:
+            return False
+
         # Test whether the channel is a ForumPost channel
         try:
             if hasattr(channel, "parent_channel"):
@@ -260,7 +284,8 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         await self.release_prinsoner(prinsoner=prisoner)
         return True
 
-    
+    ################ Utility functions FINISH ################
+    ################ Command functions STARTS ################
 
     @module_group_setting.subcommand("set_global_admin", sub_cmd_description="Set the Global Admin")
     @interactions.slash_option(
@@ -287,7 +312,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                     max_values=25,
                     default_values=[ctx.guild.get_member(_.id) for _ in global_admins if _.type == MRCTType.USER]
                 )
-                await ctx.send("Set the global admin USER:", components=[component_user])
+                await ctx.send("Set the global admin USER:", components=[component_user], ephemeral=True)
             case MRCTType.ROLE:
                 component_role: interactions.RoleSelectMenu = interactions.RoleSelectMenu(
                     custom_id=GLOBAL_ADMIN_ROLE_CUSTOM_ID,
@@ -295,7 +320,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                     max_values=25,
                     default_values=[ctx.guild.get_role(_.id) for _ in global_admins if _.type == MRCTType.ROLE]
                 )
-                await ctx.send("Set the global admin ROLE:", components=[component_role])
+                await ctx.send("Set the global admin ROLE:", components=[component_role], ephemeral=True)
 
     @interactions.component_callback(GLOBAL_ADMIN_USER_CUSTOM_ID)
     async def callback_setGA_component_user(self, ctx: interactions.ComponentContext) -> None:
@@ -320,7 +345,6 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             return
         await ctx.send("You do not have the permission to do so!", ephemeral=True)
 
-    #TODO callback of component role
     @interactions.component_callback(GLOBAL_ADMIN_ROLE_CUSTOM_ID)
     async def callback_setGA_component_role(self, ctx: interactions.ComponentContext) -> None:
         if await my_admin_check(ctx):
@@ -342,7 +366,6 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             return
         await ctx.send("You do not have the permission to do so!", ephemeral=True)
 
-    #TODO modify the original library code: https://github.com/interactions-py/interactions.py/pull/1654
 
     @module_group_setting.subcommand("set_moderator", sub_cmd_description="Set the moderator in this channel")
     @interactions.slash_option(
@@ -369,7 +392,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                     max_values=25,
                     default_values=[ctx.guild.get_member(_.id) for _ in global_admins if _.type == MRCTType.USER]
                 )
-                await ctx.send(f"Set the `{ctx.channel.name}` moderator USER:", components=[component_user])
+                await ctx.send(f"Set the `{ctx.channel.name}` moderator USER:", components=[component_user], ephemeral=True)
             case MRCTType.ROLE:
                 component_role: interactions.RoleSelectMenu = interactions.RoleSelectMenu(
                     custom_id=CHANNEL_MODERATOR_ROLE_CUSTOM_ID,
@@ -377,14 +400,60 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                     max_values=25,
                     default_values=[ctx.guild.get_role(_.id) for _ in global_admins if _.type == MRCTType.ROLE]
                 )
-                await ctx.send(f"Set the `{ctx.channel.name}` moderator ROLE:", components=[component_role])
+                await ctx.send(f"Set the `{ctx.channel.name}` moderator ROLE:", components=[component_role], ephemeral=True)
 
-    #TODO make the component callback. This should also check the channel in addition to the user id
     @interactions.component_callback(CHANNEL_MODERATOR_USER_CUSTOM_ID)
-    async def callback_setCM_component_user(self, ctx: interactions.ComponentContext):
-        raise NotImplementedError()
+    async def callback_setCM_component_user(self, ctx: interactions.ComponentContext) -> None:
+        if await my_admin_check(ctx):
+            message: interactions.Message = ctx.message
+            channel: interactions.GuildChannel = ctx.channel if not hasattr(ctx.channel, "parent_channel") else ctx.channel.parent_channel
+            msg_to_send: str = f"Added channel {ctx.channel.name} moderator as a member:"
+            for user in ctx.values:
+                user = cast(interactions.Member, user)
+                if user.bot:
+                    continue
+                _to_add: ChannelModerator = ChannelModerator(user.id, MRCTType.USER, channel.id)
+                if _to_add not in global_admins:
+                    global_admins.append(_to_add)
+                    async with Session() as conn:
+                        conn.add(
+                            ModeratorDB(id=_to_add.id, type=_to_add.type, channel_id=_to_add.channel_id)
+                        )
+                        await conn.commit()
+                    msg_to_send += f"\n- {user.display_name} {user.mention}"
+            await ctx.send(msg_to_send)
+            await message.delete()
+            return
+        await ctx.send("You do not have the permission to do so!", ephemeral=True)
 
-    #TODO make the component callback. This should also check the channel in addition to the user id
     @interactions.component_callback(CHANNEL_MODERATOR_ROLE_CUSTOM_ID)
-    async def callback_setCM_component_role(self, ctx: interactions.ComponentContext):
-        raise NotImplementedError()
+    async def callback_setCM_component_role(self, ctx: interactions.ComponentContext) -> None:
+        if await my_admin_check(ctx):
+            message: interactions.Message = ctx.message
+            channel: interactions.GuildChannel = ctx.channel if not hasattr(ctx.channel, "parent_channel") else ctx.channel.parent_channel
+            msg_to_send: str = "Added channel moderator as a role:"
+            for role in ctx.values:
+                role = cast(interactions.Role, role)
+                _to_add: ChannelModerator = ChannelModerator(role.id, MRCTType.ROLE, channel.id)
+                if _to_add not in channel_moderators:
+                    channel_moderators.append(_to_add)
+                    async with Session() as conn:
+                        conn.add(
+                            ModeratorDB(id=_to_add.id, type=_to_add.type, channel_id=_to_add.channel_id)
+                        )
+                        await conn.commit()
+                    msg_to_send += f"\n- {role.name} {role.mention}"
+            await ctx.send(msg_to_send)
+            await message.delete()
+            return
+        await ctx.send("You do not have the permission to do so!", ephemeral=True)
+
+    #TODO remove global admin
+    #TODO remove channel moderator
+    #TODO view global admin
+    #TODO view channel moderator
+    #TODO view summary (All global admins, channel moderators, prisoners with time remaining)
+    #TODO (command) timeout member in a channel
+    #TODO (context menu) timeout member in a channel
+    #TODO (command) release member in a channel
+    #TODO (context menu) release member in a channel

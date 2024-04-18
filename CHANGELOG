@@ -18,3 +18,9 @@
 - Added channel moderator setting command
 - Component callback placeholders
 - Added a summary command in `README.md`
+
+# 20240418
+- Send all setting components as ephemeral messages
+- Added Component callbacks
+- Added library code modification warning
+- Add Context Menu details in `README.md`

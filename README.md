@@ -56,6 +56,7 @@ In contrast:
 - `/confined_timeout setting view_moderator`
 - `/confined_timeout setting summary`
 - `/confined_timeout timeout <Member> <Minutes> <Hours> <Days>`
-    - Context Menu, modal window to enter details
+    - User Context Menu, modal window to enter details
+    - Message Context Menu, modal window to enter details. Message as the reason.
 - `/confined_timeout release <Member>`
-    - Context Menu
+    - User Context Menu
