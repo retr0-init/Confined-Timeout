@@ -24,3 +24,7 @@
 - Added Component callbacks
 - Added library code modification warning
 - Add Context Menu details in `README.md`
+
+# 20240429
+- Global Admin Removal draft (Need to test)
+- Update `README.md` for removal commands

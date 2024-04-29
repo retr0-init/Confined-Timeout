@@ -49,10 +49,10 @@ In contrast:
 
 ## Commands
 - `/confined_timeout setting set_global_admin`
-- `/confined_timeout setting remove_global_admin`
+- `/confined_timeout setting remove_global_admin [<user>] [<role>]`
 - `/confined_timeout setting view_global_admin`
 - `/confined_timeout setting set_moderator`
-- `/confined_timeout setting remove_moderator`
+- `/confined_timeout setting remove_moderator [<user>] [<role>]`
 - `/confined_timeout setting view_moderator`
 - `/confined_timeout setting summary`
 - `/confined_timeout timeout <Member> <Minutes> <Hours> <Days>`

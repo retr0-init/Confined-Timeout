@@ -29,7 +29,7 @@ import asyncio
 from enum import Enum, unique
 from dataclasses import dataclass
 import datetime
-from typing import Union, cast, Callable, Awaitable
+from typing import Union, cast, Callable, Awaitable, Optional
 
 import sqlalchemy
 from sqlalchemy import select as sqlselect
@@ -448,7 +448,95 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             return
         await ctx.send("You do not have the permission to do so!", ephemeral=True)
 
-    #TODO remove global admin
+    #TODO TEST remove global admin
+    @module_group_setting.subcommand("remove_global_admin", sub_cmd_description="Remove the Global Admin")
+    @interactions.slash_option(
+        "user",
+        description="The global admin user to be removed",
+        required=False,
+        opt_type=interactions.OptionType.USER,
+        autocomplete=True
+    )
+    @interactions.slash_option(
+        "role",
+        description="The global admin role to be removed.",
+        required=False,
+        opt_type=interactions.OptionType.ROLE,
+        autocomplete=True
+    )
+    @interactions.check(my_admin_check)
+    async def module_group_setting_removeGlobalAdmin(
+        self, ctx: interactions.SlashContext,
+        user: Optional[interactions.User] = None,
+        role: Optional[interactions.Role] = None) -> None:
+        """
+        Remove the global admin user or role
+        """
+        # If there is no parameter provided
+        if user is None and role is None:
+            await ctx.send("Please select either a user or a role to be removed!", ephemeral=True)
+            return
+        async with Session() as session:
+            if user is not None:
+                ga: GlobalAdmin = GlobalAdmin(user.id, MRCTType.USER)
+                if ga not in global_admins:
+                    await ctx.send(f"{user.mention} is not a global admin user!")
+                    return
+                global_admins.remove(ga)
+                await session.execute(
+                    sqldelete(GlobalAdminDB).
+                    where(sqlalchemy.and_(
+                        GlobalAdminDB.id == ga.id,
+                        GlobalAdminDB.type == ga.type
+                    ))
+                )
+            if role is not None:
+                ga: GlobalAdmin = GlobalAdmin(role.id, MRCTType.ROLE)
+                if ga not in global_admins:
+                    await ctx.send(f"{role.mention} is not a global admin role!")
+                    return
+                global_admins.remove(ga)
+                await session.execute(
+                    sqldelete(GlobalAdminDB).
+                    where(sqlalchemy.and_(
+                        GlobalAdminDB.id == ga.id,
+                        GlobalAdminDB.type == ga.type
+                    ))
+                )
+            await session.commit()
+        await ctx.send(f"Removed global admins:\n{'- '+user.mention if user is not None else ''}\n{'- '+role.mention if role is not None else ''}")
+    
+    @module_group_setting_removeGlobalAdmin.autocomplete("user")
+    async def autocomplete_removeGlobalAdmin_user(self, ctx: interactions.AutocompleteContext) -> None:
+        option_input: str = ctx.input_text
+        options_user: list[interactions.Member] = [ctx.guild.get_member(i.id) for i in global_admins if i.type == MRCTType.USER]
+        options_auto: list[interactions.Member] = [
+            i for i in options_user if option_input in i.display_name or option_input in i.username
+        ]
+        await ctx.send(
+            choices=[
+                {
+                    "name": i.display_name,
+                    "value": i
+                } for i in options_auto
+            ]
+        )
+
+    @module_group_setting_removeGlobalAdmin.autocomplete("role")
+    async def autocomplete_removeGlobalAdmin_role(self, ctx: interactions.AutocompleteContext) -> None:
+        option_input: str = ctx.input_text
+        options_role: list[interactions.Role] = [ctx.guild.get_role(i.id) for i in global_admins if i.type == MRCTType.ROLE]
+        options_auto: list[interactions.Role] = [
+            i for i in options_role if option_input in i.name
+        ]
+        await ctx.send(
+            choices=[
+                {
+                    "name": i.name,
+                    "value": i
+                } for i in options_auto
+            ]
+        )
     #TODO remove channel moderator
     #TODO view global admin
     #TODO view channel moderator
