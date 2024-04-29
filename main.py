@@ -454,21 +454,21 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         "user",
         description="The global admin user to be removed",
         required=False,
-        opt_type=interactions.OptionType.USER,
+        opt_type=interactions.OptionType.INTEGER,
         autocomplete=True
     )
     @interactions.slash_option(
         "role",
         description="The global admin role to be removed.",
         required=False,
-        opt_type=interactions.OptionType.ROLE,
+        opt_type=interactions.OptionType.INTEGER,
         autocomplete=True
     )
     @interactions.check(my_admin_check)
     async def module_group_setting_removeGlobalAdmin(
         self, ctx: interactions.SlashContext,
-        user: Optional[interactions.User] = None,
-        role: Optional[interactions.Role] = None) -> None:
+        user: Optional[int] = None,
+        role: Optional[int] = None) -> None:
         """
         Remove the global admin user or role
         """
@@ -477,11 +477,14 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             await ctx.send("Please select either a user or a role to be removed!", ephemeral=True)
             return
         async with Session() as session:
+            msg: str = ""
             if user is not None:
-                ga: GlobalAdmin = GlobalAdmin(user.id, MRCTType.USER)
+                ga: GlobalAdmin = GlobalAdmin(user, MRCTType.USER)
+                ga_mention: str = ctx.guild.get_member(ga.id).mention
                 if ga not in global_admins:
-                    await ctx.send(f"{user.mention} is not a global admin user!")
+                    await ctx.send(f"{ga_mention} is not a global admin user!")
                     return
+                msg += f"\n- {ga_mention}"
                 global_admins.remove(ga)
                 await session.execute(
                     sqldelete(GlobalAdminDB).
@@ -491,10 +494,12 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                     ))
                 )
             if role is not None:
-                ga: GlobalAdmin = GlobalAdmin(role.id, MRCTType.ROLE)
+                ga: GlobalAdmin = GlobalAdmin(role, MRCTType.ROLE)
+                ga_mention: str = ctx.guild.get_role(ga.id).mention
                 if ga not in global_admins:
-                    await ctx.send(f"{role.mention} is not a global admin role!")
+                    await ctx.send(f"{ga_mention} is not a global admin role!")
                     return
+                msg += f"\n- {ga_mention}"
                 global_admins.remove(ga)
                 await session.execute(
                     sqldelete(GlobalAdminDB).
@@ -517,7 +522,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             choices=[
                 {
                     "name": i.display_name,
-                    "value": i
+                    "value": i.id
                 } for i in options_auto
             ]
         )
@@ -533,7 +538,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             choices=[
                 {
                     "name": i.name,
-                    "value": i
+                    "value": i.id
                 } for i in options_auto
             ]
         )
