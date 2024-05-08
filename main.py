@@ -340,8 +340,8 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                         )
                         await conn.commit()
                     msg_to_send += f"\n- {user.display_name} {user.mention}"
+            await ctx.edit_origin(content="Global admin user set!", components=[])
             await ctx.send(msg_to_send)
-            await message.edit(content="Global admin user set!", components=[])
             return
         await ctx.send("You do not have the permission to do so!", ephemeral=True)
 
@@ -361,8 +361,8 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                         )
                         await conn.commit()
                     msg_to_send += f"\n- {role.name} {role.mention}"
+            await ctx.edit_origin(content="Global admin role set!", components=[])
             await ctx.send(msg_to_send)
-            await message.edit(content="Global admin role set!", components=[])
             return
         await ctx.send("You do not have the permission to do so!", ephemeral=True)
 
