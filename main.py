@@ -454,27 +454,33 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         "user",
         description="The global admin user to be removed",
         required=False,
-        opt_type=interactions.OptionType.INTEGER,
+        opt_type=interactions.OptionType.STRING,
         autocomplete=True
     )
     @interactions.slash_option(
         "role",
         description="The global admin role to be removed.",
         required=False,
-        opt_type=interactions.OptionType.INTEGER,
+        opt_type=interactions.OptionType.STRING,
         autocomplete=True
     )
     @interactions.check(my_admin_check)
     async def module_group_setting_removeGlobalAdmin(
         self, ctx: interactions.SlashContext,
-        user: Optional[int] = None,
-        role: Optional[int] = None) -> None:
+        user: Optional[str] = None,
+        role: Optional[str] = None) -> None:
         """
         Remove the global admin user or role
         """
         # If there is no parameter provided
         if user is None and role is None:
             await ctx.send("Please select either a user or a role to be removed!", ephemeral=True)
+            return
+        try:
+            user = int(user) if user is not None else None
+            role = int(role) if role is not None else None
+        except ValueError:
+            await ctx.send("Input value error! Please contact technical support.", ephemeral=True)
             return
         async with Session() as session:
             msg: str = ""
@@ -522,7 +528,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             choices=[
                 {
                     "name": i.display_name,
-                    "value": i.id
+                    "value": str(i.id)
                 } for i in options_auto
             ]
         )
@@ -538,7 +544,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             choices=[
                 {
                     "name": i.name,
-                    "value": i.id
+                    "value": str(i.id)
                 } for i in options_auto
             ]
         )
