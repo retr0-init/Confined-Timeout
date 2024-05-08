@@ -515,6 +515,8 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                     ))
                 )
             await session.commit()
+        user: Optional[interactions.User] = ctx.guild.get_member(user) if user is not None else None
+        role: Optional[interactions.Role] = ctx.guild.get_role(role) if role is not None else None
         await ctx.send(f"Removed global admins:\n{'- '+user.mention if user is not None else ''}\n{'- '+role.mention if role is not None else ''}")
     
     @module_group_setting_removeGlobalAdmin.autocomplete("user")
