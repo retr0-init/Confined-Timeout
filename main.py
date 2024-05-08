@@ -448,7 +448,6 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             return
         await ctx.send("You do not have the permission to do so!", ephemeral=True)
 
-    #TODO TEST remove global admin
     @module_group_setting.subcommand("remove_global_admin", sub_cmd_description="Remove the Global Admin")
     @interactions.slash_option(
         "user",
