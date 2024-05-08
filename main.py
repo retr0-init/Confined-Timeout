@@ -542,11 +542,85 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                 } for i in options_auto
             ]
         )
+    
     #TODO remove channel moderator
+    @module_group_setting.subcommand("remove_channel_mod", sub_cmd_description="Remove the Channel Moderator")
+    @interactions.slash_option(
+        "user",
+        description="The channel moderator user to be removed",
+        required=False,
+        opt_type=interactions.OptionType.INTEGER,
+        autocomplete=True
+    )
+    @interactions.slash_option(
+        "role",
+        description="The channel moderator role to be removed.",
+        required=False,
+        opt_type=interactions.OptionType.INTEGER,
+        autocomplete=True
+    )
+    @interactions.check(my_admin_check)
+    async def module_group_setting_removeChannelModerator(
+        self, ctx: interactions.SlashContext,
+        user: Optional[int] = None,
+        role: Optional[int] = None) -> None:
+        raise NotImplementedError()
+    
     #TODO view global admin
+    @module_group_setting.subcommand("view_global_admin", sub_cmd_description="View all Global Admins")
+    async def module_group_setting_viewGlobalAdmin(self, ctx: interactions.SlashContext) -> None:
+        return NotImplementedError()
+    
     #TODO view channel moderator
+    @module_group_setting.subcommand("view_channel_mod", sub_cmd_description="View Moderators of this channel")
+    async def module_group_setting_viewChannelModerator(self, ctx: interactions.SlashContext) -> None:
+        return NotImplementedError()
+
     #TODO view summary (All global admins, channel moderators, prisoners with time remaining)
+    @module_group_setting.subcommand("summary", sub_cmd_description="View summary")
+    async def module_group_setting_viewSummary(self, ctx: interactions.SlashContext) -> None:
+        return NotImplementedError()
+    
     #TODO (command) timeout member in a channel
-    #TODO (context menu) timeout member in a channel
+    @module_base.subcommand("timeout", sub_cmd_description="Timeout a member in this channel")
+    @interactions.slash_option(
+        "user",
+        description="The user to timeout",
+        required=True,
+        opt_type=interactions.OptionType.USER
+    )
+    @interactions.check(my_channel_moderator_check)
+    async def module_base_timeout(self, ctx: interactions.SlashContext, user: interactions.User) -> None:
+        raise NotImplementedError()
+    
+    #TODO (user context menu) timeout member in a channel
+    @interactions.user_context_menu("Confined Timeout")
+    async def contextmenu_usr_timeout(self, ctx: interactions.ContextMenuContext) -> None:
+        raise NotImplementedError()
+
+    #TODO (message context menu) timeout member in a channel
+    @interactions.message_context_menu("Confined Timeout")
+    async def contextmenu_msg_timeout(self, ctx: interactions.ContextMenuContext) -> None:
+        raise NotImplementedError()
+    
     #TODO (command) release member in a channel
+    @module_base.subcommand("release", sub_cmd_description="Revoke a member timeout in this channel")
+    @interactions.slash_option(
+        "user",
+        description="The user to release",
+        required=True,
+        opt_type=interactions.OptionType.INTEGER,
+        autocomplete=True
+    )
+    @interactions.check(my_channel_moderator_check)
+    async def module_base_release(self, ctx: interactions.SlashContext, user: int) -> None:
+        raise NotImplementedError()
+
+    @module_base_release.autocomplete("user")
+    async def autocomplete_release_user(self, ctx: interactions.AutocompleteContext) -> None:
+        raise NotImplementedError()
+    
     #TODO (context menu) release member in a channel
+    @interactions.user_context_menu("Confined Release")
+    async def contextmenu_usr_release(self, ctx: interactions.ContextMenuContext) -> None:
+        raise NotImplementedError()
