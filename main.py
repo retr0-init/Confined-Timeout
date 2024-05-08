@@ -594,12 +594,12 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         raise NotImplementedError()
     
     #TODO (user context menu) timeout member in a channel
-    @interactions.user_context_menu("Confined Timeout")
+    @interactions.user_context_menu("Confined Timeout User")
     async def contextmenu_usr_timeout(self, ctx: interactions.ContextMenuContext) -> None:
         raise NotImplementedError()
 
     #TODO (message context menu) timeout member in a channel
-    @interactions.message_context_menu("Confined Timeout")
+    @interactions.message_context_menu("Confined Timeout Msg")
     async def contextmenu_msg_timeout(self, ctx: interactions.ContextMenuContext) -> None:
         raise NotImplementedError()
     
