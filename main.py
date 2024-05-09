@@ -618,7 +618,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                     ))
                 )
             if role is not None:
-                cm: ChannelModerator = ChannelModerator(user, MRCTType.ROLE, channel.id)
+                cm: ChannelModerator = ChannelModerator(role, MRCTType.ROLE, channel.id)
                 cm_mention: str = ctx.guild.get_role(cm.id).mention
                 if cm not in channel_moderators:
                     await ctx.send(f"{cm_mention} is not the moderator role of this channel {channel.mention}!", silent=True)
