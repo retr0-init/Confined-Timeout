@@ -94,7 +94,7 @@ async def my_admin_check(ctx: interactions.BaseContext) -> bool:
     res: bool = await interactions.is_owner()(ctx)
     gadmin_user: GlobalAdmin = GlobalAdmin(ctx.author.id, MRCTType.USER)
     res_user: bool = gadmin_user in global_admins
-    res_role: bool = any(map(lambda x: ctx.author.has_role(x.id) if x.type == MRCTType.ROLE else False, global_admins))
+    res_role: bool = any(map(lambda x: ctx.author.has_role(x.id) and isinstance(x, GlobalAdmin) if x.type == MRCTType.ROLE else False, global_admins))
 
     return res or res_user or res_role
 
@@ -110,7 +110,7 @@ async def my_channel_moderator_check(ctx: interactions.BaseContext) -> bool:
     )
     res_user: bool = cmod_user in channel_moderators
     res_role: bool = any(map(
-        lambda x: ctx.author.has_role(x.id) if x.type == MRCTType.ROLE else False,
+        lambda x: ctx.author.has_role(x.id) and isinstance(x, ChannelModerator) if x.type == MRCTType.ROLE else False,
         (_ for _ in channel_moderators if _.channel_id == channel_id)
     ))
     return res_user or res_role
@@ -421,7 +421,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                     continue
                 _to_add: ChannelModerator = ChannelModerator(user.id, MRCTType.USER, channel.id)
                 if _to_add not in global_admins:
-                    global_admins.append(_to_add)
+                    channel_moderators.append(_to_add)
                     async with Session() as conn:
                         conn.add(
                             ModeratorDB(id=_to_add.id, type=_to_add.type, channel_id=_to_add.channel_id)

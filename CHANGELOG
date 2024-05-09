@@ -41,3 +41,5 @@
 - Fix channel send message in the component callback
 - Fix channel mod adding initial value
 - Fix channel mod adding placeholder text
+- Fix channel mod user adding callback bug
+- Improve priviledge checking
