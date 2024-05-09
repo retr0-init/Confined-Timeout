@@ -390,13 +390,14 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         Pop a User/Role Select Menu ephemeral to choose. It will disappear once selected.
         It will check whether the user or role is capable of the channel moderator
         '''
+        channel: interactions.GuildChannel = ctx.channel if not hasattr(ctx.channel, "parent_channel") else ctx.channel.parent_channel
         match set_type:
             case MRCTType.USER:
                 component_user: interactions.UserSelectMenu = interactions.UserSelectMenu(
                     custom_id=CHANNEL_MODERATOR_USER_CUSTOM_ID,
                     placeholder=f"Select the user moderator for {ctx.channel.name}",
                     max_values=25,
-                    default_values=[ctx.guild.get_member(_.id) for _ in global_admins if _.type == MRCTType.USER]
+                    default_values=[ctx.guild.get_member(_.id) for _ in channel_moderators if _.type == MRCTType.USER and _.type == channel.id]
                 )
                 await ctx.send(f"Set the `{ctx.channel.name}` moderator USER:", components=[component_user], ephemeral=True)
             case MRCTType.ROLE:
@@ -404,7 +405,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                     custom_id=CHANNEL_MODERATOR_ROLE_CUSTOM_ID,
                     placeholder=f"Select the role moderator for {ctx.channel.name}",
                     max_values=25,
-                    default_values=[ctx.guild.get_role(_.id) for _ in global_admins if _.type == MRCTType.ROLE]
+                    default_values=[ctx.guild.get_role(_.id) for _ in channel_moderators if _.type == MRCTType.ROLE and _.type == channel.id]
                 )
                 await ctx.send(f"Set the `{ctx.channel.name}` moderator ROLE:", components=[component_role], ephemeral=True)
 
@@ -498,7 +499,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                 ga: GlobalAdmin = GlobalAdmin(user, MRCTType.USER)
                 ga_mention: str = ctx.guild.get_member(ga.id).mention
                 if ga not in global_admins:
-                    await ctx.send(f"{ga_mention} is not a global admin user!")
+                    await ctx.send(f"{ga_mention} is not a global admin user!", silent=True)
                     return
                 msg += f"\n- {ga_mention}"
                 global_admins.remove(ga)
@@ -513,7 +514,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                 ga: GlobalAdmin = GlobalAdmin(role, MRCTType.ROLE)
                 ga_mention: str = ctx.guild.get_role(ga.id).mention
                 if ga not in global_admins:
-                    await ctx.send(f"{ga_mention} is not a global admin role!")
+                    await ctx.send(f"{ga_mention} is not a global admin role!", silent=True)
                     return
                 msg += f"\n- {ga_mention}"
                 global_admins.remove(ga)
@@ -604,7 +605,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                 cm: ChannelModerator = ChannelModerator(user, MRCTType.USER, channel.id)
                 cm_mention: str = ctx.guild.get_member(cm.id).mention
                 if cm not in channel_moderators:
-                    await ctx.send(f"{cm_mention} is not the moderator user of this channel {channel.mention}!")
+                    await ctx.send(f"{cm_mention} is not the moderator user of this channel {channel.mention}!", silent=True)
                     return
                 msg += f"\n- {cm_mention}"
                 channel_moderators.remove(cm)
@@ -620,7 +621,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                 cm: ChannelModerator = ChannelModerator(user, MRCTType.ROLE, channel.id)
                 cm_mention: str = ctx.guild.get_member(cm.id).mention
                 if cm not in channel_moderators:
-                    await ctx.send(f"{cm_mention} is not the moderator role of this channel {channel.mention}!")
+                    await ctx.send(f"{cm_mention} is not the moderator role of this channel {channel.mention}!", silent=True)
                     return
                 msg += f"\n- {cm_mention}"
                 channel_moderators.remove(cm)
