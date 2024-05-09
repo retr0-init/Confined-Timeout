@@ -563,7 +563,6 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             ]
         )
     
-    #TODO TEST remove channel moderator
     @module_group_setting.subcommand("remove_channel_mod", sub_cmd_description="Remove the Channel Moderator")
     @interactions.slash_option(
         "user",

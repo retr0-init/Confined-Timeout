@@ -35,7 +35,7 @@
 - Fix the channel mod and global admin setting ephemeral message deletion bug
 
 # 20240509
-- Channel Moderator Removal draft (Need to test)
+- Channel Moderator Removal Implemented
 - Fix channel moderaetor setting function
 - Silent the mentions in the failed removal
 - Fix channel send message in the component callback
