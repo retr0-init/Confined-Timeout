@@ -38,3 +38,4 @@
 - Channel Moderator Removal draft (Need to test)
 - Fix channel moderaetor setting function
 - Silent the mentions in the failed removal
+- Fix channel send message in the component callback

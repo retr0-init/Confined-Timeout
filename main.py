@@ -431,7 +431,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             # Edit the original ephemeral message to hide the select menu
             await ctx.edit_origin(content="Channel Moderator user set!", components=[])
             # The edit above already acknowledged the context so has to send message to channel directly
-            await ctx.send(msg_to_send)
+            await ctx.channel.send(msg_to_send)
             return
         await ctx.send("You do not have the permission to do so!", ephemeral=True)
 
@@ -455,7 +455,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             # Edit the original ephemeral message to hide the select menu
             await ctx.edit_origin(content="Channel Moderator role set!", components=[])
             # The edit above already acknowledged the context so has to send message to channel directly
-            await ctx.send(msg_to_send)
+            await ctx.channel.send(msg_to_send)
             return
         await ctx.send("You do not have the permission to do so!", ephemeral=True)
 
