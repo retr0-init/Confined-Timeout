@@ -395,7 +395,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             case MRCTType.USER:
                 component_user: interactions.UserSelectMenu = interactions.UserSelectMenu(
                     custom_id=CHANNEL_MODERATOR_USER_CUSTOM_ID,
-                    placeholder=f"Select the user moderator for {ctx.channel.name}",
+                    placeholder=f"Select the user moderator for {channel.name}",
                     max_values=25,
                     default_values=[ctx.guild.get_member(_.id) for _ in channel_moderators if _.type == MRCTType.USER and _.channel_id == channel.id]
                 )
@@ -403,7 +403,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             case MRCTType.ROLE:
                 component_role: interactions.RoleSelectMenu = interactions.RoleSelectMenu(
                     custom_id=CHANNEL_MODERATOR_ROLE_CUSTOM_ID,
-                    placeholder=f"Select the role moderator for {ctx.channel.name}",
+                    placeholder=f"Select the role moderator for {channel.name}",
                     max_values=25,
                     default_values=[ctx.guild.get_role(_.id) for _ in channel_moderators if _.type == MRCTType.ROLE and _.channel_id == channel.id]
                 )
