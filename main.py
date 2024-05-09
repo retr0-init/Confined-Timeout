@@ -562,7 +562,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             ]
         )
     
-    #TODO remove channel moderator
+    #TODO TEST remove channel moderator
     @module_group_setting.subcommand("remove_channel_mod", sub_cmd_description="Remove the Channel Moderator")
     @interactions.slash_option(
         "user",
@@ -583,15 +583,94 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         self, ctx: interactions.SlashContext,
         user: Optional[str] = None,
         role: Optional[str] = None) -> None:
-        raise NotImplementedError()
+        """
+        Remove the moderator of current channel
+        """
+        # If there is no parameter provided
+        if user is None and role is None:
+            await ctx.send("Please select either a user or a role to be removed!", ephemeral=True)
+            return
+        try:
+            # Discord cannot transfer big integer so using string and convert to integer instead
+            user = int(user) if user is not None else None
+            role = int(role) if role is not None else None
+        except ValueError:
+            await ctx.send("Input value error! Please contact technical support.", ephemeral=True)
+            return
+        channel: interactions.GuildChannel = ctx.channel if not hasattr(ctx.channel, "parent_channel") else ctx.channel.parent_channel
+        async with Session() as session:
+            msg: str = ""
+            if user is not None:
+                cm: ChannelModerator = ChannelModerator(user, MRCTType.USER, channel.id)
+                cm_mention: str = ctx.guild.get_member(cm.id).mention
+                if cm not in channel_moderators:
+                    await ctx.send(f"{cm_mention} is not the moderator user of this channel {channel.mention}!")
+                    return
+                msg += f"\n- {cm_mention}"
+                channel_moderators.remove(cm)
+                await session.execute(
+                    sqldelete(ModeratorDB).
+                    where(sqlalchemy.and_(
+                        ModeratorDB.id == cm.id,
+                        ModeratorDB.type == cm.type,
+                        ModeratorDB.channel_id == cm.channel_id
+                    ))
+                )
+            if role is not None:
+                cm: ChannelModerator = ChannelModerator(user, MRCTType.ROLE, channel.id)
+                cm_mention: str = ctx.guild.get_member(cm.id).mention
+                if cm not in channel_moderators:
+                    await ctx.send(f"{cm_mention} is not the moderator role of this channel {channel.mention}!")
+                    return
+                msg += f"\n- {cm_mention}"
+                channel_moderators.remove(cm)
+                await session.execute(
+                    sqldelete(ModeratorDB).
+                    where(sqlalchemy.and_(
+                        ModeratorDB.id == cm.id,
+                        ModeratorDB.type == cm.type,
+                        ModeratorDB.channel_id == cm.channel_id
+                    ))
+                )
+            await session.commit()
+        # Get user and role objects to get name and mention
+        user: Optional[interactions.User] = ctx.guild.get_member(user) if user is not None else None
+        role: Optional[interactions.Role] = ctx.guild.get_role(role) if role is not None else None
+        await ctx.send(f"Removed channel moderator in {channel.mention}:\n{'- '+user.mention if user is not None else ''}\n{'- '+role.mention if role is not None else ''}")
 
     @module_group_setting_removeChannelModerator.autocomplete("user")
     async def autocomplete_removeChannelModerator_user(self, ctx: interactions.AutocompleteContext) -> None:
-        raise NotImplementedError()
+        channel: interactions.GuildChannel = ctx.channel if not hasattr(ctx.channel, "parent_channel") else ctx.channel.parent_channel
+        option_input: str = ctx.input_text
+        options_user: list[interactions.Member] = [ctx.guild.get_member(i.id) for i in channel_moderators if i.type == MRCTType.USER and i.channel_id == channel.id]
+        options_auto: list[interactions.Member] = [
+            i for i in options_user if option_input in i.display_name or option_input in i.username
+        ]
+        await ctx.send(
+            choices=[
+                {
+                    "name": i.display_name,
+                    "value": str(i.id)
+                } for i in options_auto
+            ]
+        )
 
     @module_group_setting_removeChannelModerator.autocomplete("role")
     async def autocomplete_removeChannelModerator_role(self, ctx: interactions.AutocompleteContext) -> None:
-        raise NotImplementedError()
+        channel: interactions.GuildChannel = ctx.channel if not hasattr(ctx.channel, "parent_channel") else ctx.channel.parent_channel
+        option_input: str = ctx.input_text
+        options_role: list[interactions.Role] = [ctx.guild.get_role(i.id) for i in channel_moderators if i.type == MRCTType.ROLE and i.channel_id == channel.id]
+        options_auto: list[interactions.Role] = [
+            i for i in options_role if option_input in i.name
+        ]
+        await ctx.send(
+            choices=[
+                {
+                    "name": i.name,
+                    "value": str(i.id)
+                } for i in options_auto
+            ]
+        )
     
     #TODO view global admin
     @module_group_setting.subcommand("view_global_admin", sub_cmd_description="View all Global Admins")
