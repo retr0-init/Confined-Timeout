@@ -39,3 +39,4 @@
 - Fix channel moderaetor setting function
 - Silent the mentions in the failed removal
 - Fix channel send message in the component callback
+- Fix channel mod adding initial value

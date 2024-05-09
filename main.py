@@ -397,7 +397,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                     custom_id=CHANNEL_MODERATOR_USER_CUSTOM_ID,
                     placeholder=f"Select the user moderator for {ctx.channel.name}",
                     max_values=25,
-                    default_values=[ctx.guild.get_member(_.id) for _ in channel_moderators if _.type == MRCTType.USER and _.type == channel.id]
+                    default_values=[ctx.guild.get_member(_.id) for _ in channel_moderators if _.type == MRCTType.USER and _.channel_id == channel.id]
                 )
                 await ctx.send(f"Set the `{ctx.channel.name}` moderator USER:", components=[component_user], ephemeral=True)
             case MRCTType.ROLE:
@@ -405,7 +405,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                     custom_id=CHANNEL_MODERATOR_ROLE_CUSTOM_ID,
                     placeholder=f"Select the role moderator for {ctx.channel.name}",
                     max_values=25,
-                    default_values=[ctx.guild.get_role(_.id) for _ in channel_moderators if _.type == MRCTType.ROLE and _.type == channel.id]
+                    default_values=[ctx.guild.get_role(_.id) for _ in channel_moderators if _.type == MRCTType.ROLE and _.channel_id == channel.id]
                 )
                 await ctx.send(f"Set the `{ctx.channel.name}` moderator ROLE:", components=[component_role], ephemeral=True)
 
@@ -619,7 +619,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                 )
             if role is not None:
                 cm: ChannelModerator = ChannelModerator(user, MRCTType.ROLE, channel.id)
-                cm_mention: str = ctx.guild.get_member(cm.id).mention
+                cm_mention: str = ctx.guild.get_role(cm.id).mention
                 if cm not in channel_moderators:
                     await ctx.send(f"{cm_mention} is not the moderator role of this channel {channel.mention}!", silent=True)
                     return
