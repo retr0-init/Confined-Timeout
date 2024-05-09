@@ -185,6 +185,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         await engine.dispose()
 
     ################ Initial functions FINISH ################
+    ##########################################################
     ################ Utility functions STARTS ################
 
     async def release_prinsoner(self, prisoner: Prisoner) -> None:
@@ -285,6 +286,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         return True
 
     ################ Utility functions FINISH ################
+    ##########################################################
     ################ Command functions STARTS ################
 
     @module_group_setting.subcommand("set_global_admin", sub_cmd_description="Set the Global Admin")
@@ -340,7 +342,9 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                         )
                         await conn.commit()
                     msg_to_send += f"\n- {user.display_name} {user.mention}"
+            # Edit the original ephemeral message to hide the select menu
             await ctx.edit_origin(content="Global admin user set!", components=[])
+            # The edit above already acknowledged the context so has to send message to channel directly
             await ctx.channel.send(msg_to_send)
             return
         await ctx.send("You do not have the permission to do so!", ephemeral=True)
@@ -361,7 +365,9 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                         )
                         await conn.commit()
                     msg_to_send += f"\n- {role.name} {role.mention}"
+            # Edit the original ephemeral message to hide the select menu
             await ctx.edit_origin(content="Global admin role set!", components=[])
+            # The edit above already acknowledged the context so has to send message to channel directly
             await ctx.channel.send(msg_to_send)
             return
         await ctx.send("You do not have the permission to do so!", ephemeral=True)
@@ -421,8 +427,10 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                         )
                         await conn.commit()
                     msg_to_send += f"\n- {user.display_name} {user.mention}"
+            # Edit the original ephemeral message to hide the select menu
+            await ctx.edit_origin(content="Channel Moderator user set!", components=[])
+            # The edit above already acknowledged the context so has to send message to channel directly
             await ctx.send(msg_to_send)
-            await message.delete()
             return
         await ctx.send("You do not have the permission to do so!", ephemeral=True)
 
@@ -443,8 +451,10 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                         )
                         await conn.commit()
                     msg_to_send += f"\n- {role.name} {role.mention}"
+            # Edit the original ephemeral message to hide the select menu
+            await ctx.edit_origin(content="Channel Moderator role set!", components=[])
+            # The edit above already acknowledged the context so has to send message to channel directly
             await ctx.send(msg_to_send)
-            await message.delete()
             return
         await ctx.send("You do not have the permission to do so!", ephemeral=True)
 
@@ -476,6 +486,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             await ctx.send("Please select either a user or a role to be removed!", ephemeral=True)
             return
         try:
+            # Discord cannot transfer big integer so using string and convert to integer instead
             user = int(user) if user is not None else None
             role = int(role) if role is not None else None
         except ValueError:
@@ -514,6 +525,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                     ))
                 )
             await session.commit()
+        # Get user and role objects to get name and mention
         user: Optional[interactions.User] = ctx.guild.get_member(user) if user is not None else None
         role: Optional[interactions.Role] = ctx.guild.get_role(role) if role is not None else None
         await ctx.send(f"Removed global admins:\n{'- '+user.mention if user is not None else ''}\n{'- '+role.mention if role is not None else ''}")
@@ -556,21 +568,29 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         "user",
         description="The channel moderator user to be removed",
         required=False,
-        opt_type=interactions.OptionType.INTEGER,
+        opt_type=interactions.OptionType.STRING,
         autocomplete=True
     )
     @interactions.slash_option(
         "role",
         description="The channel moderator role to be removed.",
         required=False,
-        opt_type=interactions.OptionType.INTEGER,
+        opt_type=interactions.OptionType.STRING,
         autocomplete=True
     )
     @interactions.check(my_admin_check)
     async def module_group_setting_removeChannelModerator(
         self, ctx: interactions.SlashContext,
-        user: Optional[int] = None,
-        role: Optional[int] = None) -> None:
+        user: Optional[str] = None,
+        role: Optional[str] = None) -> None:
+        raise NotImplementedError()
+
+    @module_group_setting_removeChannelModerator.autocomplete("user")
+    async def autocomplete_removeChannelModerator_user(self, ctx: interactions.AutocompleteContext) -> None:
+        raise NotImplementedError()
+
+    @module_group_setting_removeChannelModerator.autocomplete("role")
+    async def autocomplete_removeChannelModerator_role(self, ctx: interactions.AutocompleteContext) -> None:
         raise NotImplementedError()
     
     #TODO view global admin

@@ -32,3 +32,4 @@
 # 20240508
 - Add placeholder for the instances to be implemented
 - Tested global admin removal function
+- Fix the channel mod and global admin setting ephemeral message deletion bug
