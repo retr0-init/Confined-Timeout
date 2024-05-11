@@ -257,7 +257,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                 ], reason=f"Member {prisoner_member.display_name}({prisoner_member.id}) timeout for {duration_minutes} minutes in Channel {channel.parent_channel.name}")
             else:
                 # Normal Text channel
-                await channel.parent_channel.add_permission(prisoner_member, deny=[
+                await channel.add_permission(prisoner_member, deny=[
                     interactions.Permissions.SEND_MESSAGES,
                     interactions.Permissions.SEND_MESSAGES_IN_THREADS,
                     interactions.Permissions.SEND_TTS_MESSAGES,
