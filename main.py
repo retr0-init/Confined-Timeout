@@ -203,7 +203,10 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             if ctx is not None:
                 await ctx.send("The bot needs to have enough permissions! Please contact technical support!", ephemeral=True)
             return
-        prisoners.remove(prisoner)
+        for p in prisoners:
+            if p.id == prisoner.id and p.channel_id == prisoner.channel_id:
+                prisoners.remove(prisoner)
+                break
         async with Session() as session:
             await session.execute(
                 sqldelete(PrisonerDB).
