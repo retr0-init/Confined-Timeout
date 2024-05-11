@@ -291,7 +291,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             await ctx.send(f"{prisoner_member.mention} is jailed for {duration_minutes} minutes", silent=True)
         # Wait for a certain number of time and unblock the member
         await asyncio.sleep(duration_minutes * 60.0)
-        await self.release_prinsoner(prinsoner=prisoner)
+        await self.release_prinsoner(prisoner=prisoner)
         return True
 
     ################ Utility functions FINISH ################
