@@ -704,7 +704,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         pag: Paginator = Paginator.create_from_string(self.bot, f"Moderators in {channel.mention} for Confined Timeout:\n{msg}", page_size=1000)
         await pag.send(ctx)
 
-    #TODO view summary (All global admins, channel moderators, prisoners with time remaining)
+    #TODO TEST view summary (All global admins, channel moderators, prisoners with time remaining)
     @module_group_setting.subcommand("summary", sub_cmd_description="View summary")
     async def module_group_setting_viewSummary(self, ctx: interactions.SlashContext) -> None:
         msg: str = "Global Admins:"
