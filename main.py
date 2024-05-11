@@ -317,7 +317,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             await asyncio.sleep(duration_minutes * 60.0)
             await self.release_prinsoner(prisoner=prisoner)
             if ctx is not None:
-                await ctxchannel.send(f"{user.mention} is released!", silent=True)
+                await ctx.channel.send(f"{user.mention} is released!", silent=True)
         except asyncio.CancelledError:
             pass
 
