@@ -429,7 +429,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                 if user.bot:
                     continue
                 _to_add: ChannelModerator = ChannelModerator(user.id, MRCTType.USER, channel.id)
-                if _to_add not in global_admins:
+                if _to_add not in channel_moderators:
                     channel_moderators.append(_to_add)
                     async with Session() as conn:
                         conn.add(
