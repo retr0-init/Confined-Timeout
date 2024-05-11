@@ -743,7 +743,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         for cid, pls in ps.items():
             msg += f"\nPrisoners in {ctx.guild.get_channel(cid).mention}:\n"
             for i in pls:
-                timeleft: datetime.timedelta = datetime.datetime.now(i.release_datetime.tzinfo) - i.release_datetime
+                timeleft: datetime.timedelta = datetime.datetime.now() - i.release_datetime.replace(tzinfo=None)
                 timestring: str = f"{timeleft.seconds / 60 if hasattr(timeleft, 'seconds') else timeleft.microseconds} "
                 timestring += "minutes" if hasattr(timeleft, "seconds") else "microseconds"
                 msg += f"- {ctx.guild.get_member(i.id).mention} `{timestring} left`"
