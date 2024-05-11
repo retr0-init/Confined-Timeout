@@ -10,7 +10,6 @@
 - 频道调解员需要在他所管理的频道中设置。
 - 人们可以看见被禁言的成员以及其距离释放剩余的时间。
 - 人们可以看到频道调解员都有谁。
-- 禁言时长有上限。
 
 ### 存储数据库的数据结构
 - GlobalAdmin: ID (INTEGER), Type (INTEGER)
@@ -21,15 +20,15 @@
 - `/confined_timeout setting set_global_admin`
 - `/confined_timeout setting remove_global_admin [<user>] [<role>]`
 - `/confined_timeout setting view_global_admin`
-- `/confined_timeout setting upper_limit <Minutes> <Hours> <Days>`
 - `/confined_timeout setting set_moderator`
 - `/confined_timeout setting remove_moderator [<user>] [<role>]`
 - `/confined_timeout setting view_moderator`
 - `/confined_timeout setting summary`
 - `/confined_timeout timeout <Member> <Minutes> [Hours] [Days]`
-    - 菜单，弹窗输入信息。
+    - 用户菜单，弹窗输入信息。
+    - 信息菜单，弹窗输入信息
 - `/confined_timeout release <Member>`
-    - 菜单
+    - 用户菜单
 
 # Confined Timeout
 It allows certain members or roles able to timeout a member in certain channels. In the other words, the affected members cannot send message only in this channel.
@@ -40,7 +39,6 @@ In contrast:
 - The settings of the channel moderators will be explicitly set in the channel where they manage.
 - People can view the timed-out members with time left to be released.
 - People can view the channel moderators.
-- The timeout duration has an upper limit.
 
 ### Persistent Data Structure for Database
 - GlobalAdmin: ID (INTEGER), Type (INTEGER)
