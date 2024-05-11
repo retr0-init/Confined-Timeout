@@ -707,7 +707,37 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
     #TODO view summary (All global admins, channel moderators, prisoners with time remaining)
     @module_group_setting.subcommand("summary", sub_cmd_description="View summary")
     async def module_group_setting_viewSummary(self, ctx: interactions.SlashContext) -> None:
-        return NotImplementedError()
+        msg: str = "Global Admins:"
+        for i in global_admins:
+            if i.type == MRCTType.USER:
+                msg += f"- User: {ctx.guild.get_member(i.id).mention}\n"
+            elif i.type == MRCTType.ROLE:
+                role: interactions.Role = await ctx.guild.fetch_role(i.id)
+                msg += f"- Role: {role.mention}\n"
+                for u in role.members:
+                    msg += f"\t- User: {u.mention}\n"
+        cms: dict[int, list[ChannelModerator]] = {i.channel_id: [] for i in channel_moderators}
+        for i in channel_moderators:
+            cms[i.channel_id].append(i)
+        for cid, cmls in cms.items():
+            msg += f"\nModerator in {ctx.guild.get_channel(cid).mention}:\n"
+            for i in cmls:
+                if i.type == MRCTType.USER:
+                    msg += f"- User: {ctx.guild.get_member(i.id).mention}\n"
+                elif i.type == MRCTType.ROLE:
+                    role: interactions.Role = await ctx.guild.fetch_role(i.id)
+                    msg += f"- Role: {role.mention}\n"
+                    for u in role.members:
+                        msg += f"\t- User: {u.mention}\n"
+        ps: dict[int, list[Prisoner]] = {i.channel_id: [] for i in prisoners}
+        for i in prisoners:
+            ps[i.channel_id].append(i)
+        for cid, pls in ps.items():
+            msg += f"\nPrisoners in {ctx.guild.get_channel(cid).mention}:\n"
+            for i in pls:
+                msg += f"- {ctx.guild.get_member(i.id).mention} `{interactions.Timestamp.now() - i.release_datatime} minutes left`"
+        pag: Paginator = Paginator.create_from_string(self.bot, f"Moderators in {channel.mention} for Confined Timeout:\n{msg}", page_size=1000)
+        await pag.send(ctx)
     
     #TODO (command) timeout member in a channel
     @module_base.subcommand("timeout", sub_cmd_description="Timeout a member in this channel")
