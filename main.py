@@ -851,7 +851,6 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
     #TODO TEST (context menu) release member in a channel
     @interactions.user_context_menu("Confined Release")
     async def contextmenu_usr_release(self, ctx: interactions.ContextMenuContext) -> None:
-        raise NotImplementedError()
         channel: interactions.GuildChannel = ctx.channel if not hasattr(ctx.channel, "parent_channel") else ctx.channel.parent_channel
         user: interactions.Member = ctx.target
         prisoned, prisoner = self.check_prisoner(user, 1, channel)
