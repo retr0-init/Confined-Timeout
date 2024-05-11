@@ -189,8 +189,10 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
     ##########################################################
     ################ Utility functions STARTS ################
 
-    async def release_prinsoner(self, prisoner: Prisoner) -> None:
+    async def release_prinsoner(self, prisoner: Prisoner, ctx: interactions.BaseContext = None) -> None:
         if prisoner not in prisoners:
+            if ctx is not None:
+                await ctx.send("This member is not prisoned!", ephemeral=True)
             return
         channel: interactions.GuildChannel = await self.bot.fetch_channel(prisoner.channel_id)
         user: interactions.User = await self.bot.fetch_user(prisoner.id)
@@ -198,6 +200,8 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             await channel.delete_permission(user, f"Member {user.display_name}({user.id}) is released from Channel {channel.name} timeout.")
         except interactions.errors.Forbidden:
             print("The bot needs to have enough permissions!")
+            if ctx is not None:
+                await ctx.send("The bot needs to have enough permissions! Please contact technical support!", ephemeral=True)
             return
         prisoners.remove(prisoner)
         async with Session() as session:
@@ -209,6 +213,8 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                 ))
             )
             await session.commit()
+        if ctx is not None:
+            await ctx.send(f"The prisoner {ctx.guild.get_member(prisoner.id).mention} is released!")
 
     def check_prisoner(self, prisoner_member: interactions.Member, duration_minutes: int, channel: Union[interactions.GuildChannel, interactions.ThreadChannel]) -> tuple[bool, Prisoner]:
         channel_id: int = channel.id if not hasattr(channel, "parent_channel") else channel.parent_channel.id
@@ -216,7 +222,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         cp: list[Prisoner] = [p for p in prisoners if p.id == prisoner.id and p.channel_id == prisoner.channel_id]
         return len(cp) > 0, prisoner
 
-    async def jail_prisoner(self, prisoner_member: interactions.Member, duration_minutes: int, channel: Union[interactions.GuildChannel, interactions.ThreadChannel], ctx: interactions.SlashContext = None) -> bool:
+    async def jail_prisoner(self, prisoner_member: interactions.Member, duration_minutes: int, channel: Union[interactions.GuildChannel, interactions.ThreadChannel], ctx: interactions.SlashContext = None, reason: str = "") -> bool:
         # Do not double jail existing prisoners
         existed, prisoner = self.check_prisoner(prisoner_member, duration_minutes, channel)
         if existed:
@@ -258,7 +264,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                     interactions.Permissions.MANAGE_MESSAGES,
                     interactions.Permissions.MANAGE_THREADS,
                     interactions.Permissions.MANAGE_CHANNELS
-                ], reason=f"Member {prisoner_member.display_name}({prisoner_member.id}) timeout for {duration_minutes} minutes in Channel {channel.parent_channel.name}")
+                ], reason=f"Member {prisoner_member.display_name}({prisoner_member.id}) timeout for {duration_minutes} minutes in Channel {channel.parent_channel.name} reason:{reason[:50] if len(reason) > 51 else reason}")
             else:
                 # Normal Text channel
                 await channel.add_permission(prisoner_member, deny=[
@@ -273,7 +279,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                     interactions.Permissions.MANAGE_MESSAGES,
                     interactions.Permissions.MANAGE_THREADS,
                     interactions.Permissions.MANAGE_CHANNELS
-                ], reason=f"Member {prisoner_member.display_name}({prisoner_member.id}) timeout for {duration_minutes} minutes in Channel {channel.name}")
+                ], reason=f"Member {prisoner_member.display_name}({prisoner_member.id}) timeout for {duration_minutes} minutes in Channel {channel.name} reason:{reason[:50] if len(reason) > 51 else reason}")
         except interactions.errors.Forbidden:
             print("The bot needs to have enough permissions!")
             if ctx is not None:
@@ -779,22 +785,47 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
     async def contextmenu_msg_timeout(self, ctx: interactions.ContextMenuContext) -> None:
         raise NotImplementedError()
     
-    #TODO (command) release member in a channel
+    #TODO TEST (command) release member in a channel
     @module_base.subcommand("release", sub_cmd_description="Revoke a member timeout in this channel")
     @interactions.slash_option(
         "user",
         description="The user to release",
         required=True,
-        opt_type=interactions.OptionType.INTEGER,
+        opt_type=interactions.OptionType.STRING,
         autocomplete=True
     )
     @interactions.check(my_channel_moderator_check)
-    async def module_base_release(self, ctx: interactions.SlashContext, user: int) -> None:
-        raise NotImplementedError()
+    async def module_base_release(self, ctx: interactions.SlashContext, user: str) -> None:
+        channel: interactions.GuildChannel = ctx.channel if not hasattr(ctx.channel, "parent_channel") else ctx.channel.parent_channel
+        try:
+            # Discord cannot transfer big integer so using string and convert to integer instead
+            user = int(user) if user is not None else None
+        except ValueError:
+            await ctx.send("Input value error! Please contact technical support.", ephemeral=True)
+            return
+        user: interactions.Member = await ctx.guild.fetch_member(user)
+        prisoned, prisoner = self.check_prisoner(user, 1, channel)
+        if not prisoned:
+            await ctx.send(f"The member {user.mention} is not prisoned!")
+            return
+        await self.release_prinsoner(prisoner=prisoner, ctx=ctx)
 
     @module_base_release.autocomplete("user")
     async def autocomplete_release_user(self, ctx: interactions.AutocompleteContext) -> None:
-        raise NotImplementedError()
+        channel: interactions.GuildChannel = ctx.channel if not hasattr(ctx.channel, "parent_channel") else ctx.channel.parent_channel
+        option_input: str = ctx.input_text
+        options_user: list[interactions.Member] = [ctx.guild.get_member(i.id) for i in prisoners if i.channel_id == channel.id]
+        options_auto: list[interactions.Member] = [
+            i for i in options_user if option_input in i.display_name or option_input in i.username
+        ]
+        await ctx.send(
+            choices=[
+                {
+                    "name": i.display_name,
+                    "value": str(i.id)
+                } for i in options_auto
+            ]
+        )
     
     #TODO (context menu) release member in a channel
     @interactions.user_context_menu("Confined Release")
