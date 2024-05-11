@@ -814,10 +814,26 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         await modal_ctx.defer()
         success: bool = await self.jail_prisoner(user, minutes, channel, ctx=modal_ctx)
 
-    #TODO (message context menu) timeout member in a channel
+    #TODO TEST (message context menu) timeout member in a channel
     @interactions.message_context_menu("Confined Timeout Msg")
     async def contextmenu_msg_timeout(self, ctx: interactions.ContextMenuContext) -> None:
-        raise NotImplementedError()
+        channel: interactions.GuildChannel = ctx.channel if not hasattr(ctx.channel, "parent_channel") else ctx.channel.parent_channel
+        msg: interactions.Message = ctx.target
+        user: interactions.Member = msg.author
+        modal: interactions.Modal = interactions.Modal(
+            interactions.ShortText(label="Minutes to timeout. Integer, e.g. 10"),
+            title=f"Timeout {user.id} in {channel.name}"
+        )
+        await ctx.send_modal(modal=modal)
+        modal_ctx: interactions.ModalContext = await ctx.bot.wait_for_modal(modal)
+        short_text: str = modal_ctx.responses[modal.components[0].custom_id]
+        try:
+            minutes: int = int(short_text)
+        except ValueError:
+            await modal_ctx.send("The input is not integer!", ephemeral=True)
+            return
+        await modal_ctx.defer()
+        success: bool = await self.jail_prisoner(user, minutes, channel, ctx=modal_ctx, reason=msg.content)
     
     @module_base.subcommand("release", sub_cmd_description="Revoke a member timeout in this channel")
     @interactions.slash_option(
