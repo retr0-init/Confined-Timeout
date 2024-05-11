@@ -53,3 +53,4 @@
 - Prison release member (command)
 - Add cancelled prison timeout task
 - Start prisoner countdown task on startup
+- Release Member from channel (context menu) TEST Draft
