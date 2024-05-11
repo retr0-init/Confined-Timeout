@@ -216,7 +216,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         cp: list[Prisoner] = [p for p in prisoners if p.id == prisoner.id and p.channel_id == prisoner.channel_id]
         return len(cp) > 0, prisoner
 
-    async def jail_prisoner(self, prisoner_member: interactions.Member, duration_minutes: int, channel: Union[interactions.GuildChannel, interactions.ThreadChannel]) -> bool:
+    async def jail_prisoner(self, prisoner_member: interactions.Member, duration_minutes: int, channel: Union[interactions.GuildChannel, interactions.ThreadChannel], ctx: interactions.SlashContext = None) -> bool:
         # Do not double jail existing prisoners
         existed, prisoner = self.check_prisoner(prisoner_member, duration_minutes, channel)
         if existed:
@@ -281,6 +281,8 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                 release_datatime = prisoner.release_datatime
             ))
             await session.commit()
+        if ctx is not None:
+            await ctx.send(f"{prisoner_member.mention} is jailed for {duration_minutes} minutes", silent=True)
         # Wait for a certain number of time and unblock the member
         await asyncio.sleep(duration_minutes * 60.0)
         await self.release_prinsoner(prinsoner=prisoner)
@@ -742,7 +744,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         pag: Paginator = Paginator.create_from_string(self.bot, f"Summary for Confined Timeout:\n\n{msg}", page_size=1000)
         await pag.send(ctx)
     
-    #TODO (command) timeout member in a channel
+    #TODO TEST (command) timeout member in a channel
     @module_base.subcommand("timeout", sub_cmd_description="Timeout a member in this channel")
     @interactions.slash_option(
         "user",
@@ -750,9 +752,23 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         required=True,
         opt_type=interactions.OptionType.USER
     )
+    @interactions.slash_option(
+        "minutes",
+        description = "THe minutes to timeout",
+        required = True,
+        opt_type=interactions.OptionType.INTEGER
+    )
     @interactions.check(my_channel_moderator_check)
-    async def module_base_timeout(self, ctx: interactions.SlashContext, user: interactions.User) -> None:
-        raise NotImplementedError()
+    async def module_base_timeout(self, ctx: interactions.SlashContext, user: interactions.User, minutes: int) -> None:
+        channel: interactions.GuildChannel = ctx.channel if not hasattr(ctx.channel, "parent_channel") else ctx.channel.parent_channel
+        prisoned, prisoner = self.check_prisoner(user, minutes, channel)
+        await ctx.defer()
+        if prisoned:
+            await ctx.send(f"{user.mention} is already in {channel.mention} prison")
+            return
+        ctxchannel: interactions.GuildChannel = ctx.channel
+        success: bool = await self.jail_prisoner(user, minutes, channel)
+        await ctxchannel.send(f"{user.mention} is released!", silent=True)
     
     #TODO (user context menu) timeout member in a channel
     @interactions.user_context_menu("Confined Timeout User")
