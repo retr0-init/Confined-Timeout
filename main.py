@@ -744,8 +744,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             msg += f"\nPrisoners in {ctx.guild.get_channel(cid).mention}:\n"
             for i in pls:
                 timeleft: datetime.timedelta = datetime.datetime.now() - i.release_datetime.replace(tzinfo=None)
-                timestring: str = f"{timeleft.seconds / 60 if hasattr(timeleft, 'seconds') else timeleft.microseconds} "
-                timestring += "minutes" if hasattr(timeleft, "seconds") else "microseconds"
+                timestring: str = f"{timeleft.total_seconds / 60} minutes"
                 msg += f"- {ctx.guild.get_member(i.id).mention} `{timestring} left`"
         pag: Paginator = Paginator.create_from_string(self.bot, f"Summary for Confined Timeout:\n\n{msg}", page_size=1000)
         await pag.send(ctx)
@@ -760,7 +759,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
     )
     @interactions.slash_option(
         "minutes",
-        description = "THe minutes to timeout",
+        description = "The minutes to timeout",
         required = True,
         opt_type=interactions.OptionType.INTEGER
     )
