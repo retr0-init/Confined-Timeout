@@ -316,6 +316,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         try:
             await asyncio.sleep(duration_minutes * 60.0)
             await self.release_prinsoner(prisoner=prisoner)
+            user: interactions.Member = ctx.guild.get_member(prisoner.id)
             if ctx is not None:
                 await ctx.channel.send(f"{user.mention} is released!", silent=True)
         except asyncio.CancelledError:
