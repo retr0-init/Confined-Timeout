@@ -673,7 +673,6 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             ]
         )
     
-    #TODO view global admin
     @module_group_setting.subcommand("view_global_admin", sub_cmd_description="View all Global Admins")
     async def module_group_setting_viewGlobalAdmin(self, ctx: interactions.SlashContext) -> None:
         msg: str = ""
@@ -692,6 +691,20 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
     @module_group_setting.subcommand("view_channel_mod", sub_cmd_description="View Moderators of this channel")
     async def module_group_setting_viewChannelModerator(self, ctx: interactions.SlashContext) -> None:
         return NotImplementedError()
+        channel: interactions.GuildChannel = ctx.channel if not hasattr(ctx.channel, "parent_channel") else ctx.channel.parent_channel
+        msg: str = ""
+        for i in channel_moderators:
+            if i.channel_id != channel.id:
+                continue
+            if i.type == MRCTType.USER:
+                msg += f"- User: {ctx.guild.get_member(i.id).mention}\n"
+            elif i.type == MRCTType.ROLE:
+                role: interactions.Role = await ctx.guild.fetch_role(i.id)
+                msg += f"- Role: {role.mention}\n"
+                for u in role.members:
+                    msg += f"\t- User: {u.mention}\n"
+        pag: Paginator = Paginator.create_from_string(self.bot, f"Moderators in {channel.mention} for Confined Timeout:\n{msg}", page_size=1000)
+        await pag.send(ctx)
 
     #TODO view summary (All global admins, channel moderators, prisoners with time remaining)
     @module_group_setting.subcommand("summary", sub_cmd_description="View summary")
