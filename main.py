@@ -307,7 +307,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         if ctx is not None:
             await ctx.send(f"{prisoner_member.mention} is jailed for {duration_minutes} minutes", silent=True)
         # Wait for a certain number of time and unblock the member
-        task = asyncio.create_task(self.release_prisoner_task(duration_minutes=duration_minutes, prisoner=prisoner), ctx=ctx)
+        task = asyncio.create_task(self.release_prisoner_task(duration_minutes=duration_minutes, prisoner=prisoner, ctx=ctx))
         prisoner_tasks[prisoner.to_tuple()] = task
         task.add_done_callback(lambda:prisoner_tasks.pop(prisoner.to_tuple()))
         return True
