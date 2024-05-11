@@ -73,9 +73,9 @@ class ChannelModerator:
 @dataclass
 class Prisoner:
     '''Prinsoner Data Class'''
-    __slots__ = ('id', 'release_datatime', 'channel_id')
+    __slots__ = ('id', 'release_datetime', 'channel_id')
     id: int
-    release_datatime: datetime.datetime
+    release_datetime: datetime.datetime
     channel_id: int
 
 GLOBAL_ADMIN_USER_CUSTOM_ID: str = "retr0init_confined_timeout_GlobalAdmin_user"
@@ -165,13 +165,13 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             ps  = await conn.execute(sqlselect(PrisonerDB))
         global_admins = [GlobalAdmin(ga[0].id, ga[0].type) for ga in gas]
         channel_moderators = [ChannelModerator(cm[0].id, cm[0].type, cm[0].channel_id) for cm in cms]
-        prisoners = [Prisoner(p[0].id, p[0].release_datatime, p[0].channel_id) for p in ps]
+        prisoners = [Prisoner(p[0].id, p[0].release_datetime, p[0].channel_id) for p in ps]
 
     async def async_start(self) -> None:
         await asyncio.sleep(30)
         cdt: datetime.datetime = datetime.datetime.now()
         for p in prisoners:
-            if cdt >= p.release_datatime:
+            if cdt >= p.release_datetime:
                 # Release the prinsoner
                 await self.release_prinsoner(p)
     
@@ -220,6 +220,8 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         # Do not double jail existing prisoners
         existed, prisoner = self.check_prisoner(prisoner_member, duration_minutes, channel)
         if existed:
+            if ctx is not None:
+                await ctx.send("The prisoner is already prisoned!", ephemeral=True)
             return False
 
         # Do not jail channel moderators themselves
@@ -235,6 +237,8 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             (_ for _ in channel_moderators if _.channel_id == channel_id)
         ))
         if res_user or res_role:
+            if ctx is not None:
+                await ctx.send("You cannot jail channel moderator!", ephemeral=True)
             return False
 
         # Test whether the channel is a ForumPost channel
@@ -272,13 +276,15 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                 ], reason=f"Member {prisoner_member.display_name}({prisoner_member.id}) timeout for {duration_minutes} minutes in Channel {channel.name}")
         except interactions.errors.Forbidden:
             print("The bot needs to have enough permissions!")
+            if ctx is not None:
+                await ctx.send("The bot needs to have enough permissions! Please contact technical support!", ephemeral=True)
             return False
         prisoners.append(prisoner)
         async with Session() as session:
             session.add(PrisonerDB(
                 id = prisoner.id,
                 channel_id = prisoner.channel_id,
-                release_datatime = prisoner.release_datatime
+                release_datetime = prisoner.release_datetime
             ))
             await session.commit()
         if ctx is not None:
@@ -709,7 +715,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
     #TODO TEST view summary (All global admins, channel moderators, prisoners with time remaining)
     @module_group_setting.subcommand("summary", sub_cmd_description="View summary")
     async def module_group_setting_viewSummary(self, ctx: interactions.SlashContext) -> None:
-        msg: str = "Global Admins:"
+        msg: str = "Global Admins:\n"
         for i in global_admins:
             if i.type == MRCTType.USER:
                 msg += f"- User: {ctx.guild.get_member(i.id).mention}\n"
@@ -737,7 +743,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         for cid, pls in ps.items():
             msg += f"\nPrisoners in {ctx.guild.get_channel(cid).mention}:\n"
             for i in pls:
-                timeleft: datetime.timedelta = interactions.Timestamp.now() - i.release_datatime
+                timeleft: datetime.timedelta = datetime.datetime.now() - i.release_datetime
                 timestring: str = f"{timeleft.seconds / 60 if hasattr(timeleft, 'seconds') else timeleft.microseconds} "
                 timestring += "minutes" if hasattr(timeleft, "seconds") else "microseconds"
                 msg += f"- {ctx.guild.get_member(i.id).mention} `{timestring} left`"
@@ -761,13 +767,9 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
     @interactions.check(my_channel_moderator_check)
     async def module_base_timeout(self, ctx: interactions.SlashContext, user: interactions.User, minutes: int) -> None:
         channel: interactions.GuildChannel = ctx.channel if not hasattr(ctx.channel, "parent_channel") else ctx.channel.parent_channel
-        prisoned, prisoner = self.check_prisoner(user, minutes, channel)
         await ctx.defer()
-        if prisoned:
-            await ctx.send(f"{user.mention} is already in {channel.mention} prison")
-            return
         ctxchannel: interactions.GuildChannel = ctx.channel
-        success: bool = await self.jail_prisoner(user, minutes, channel)
+        success: bool = await self.jail_prisoner(user, minutes, channel, ctx=ctx)
         await ctxchannel.send(f"{user.mention} is released!", silent=True)
     
     #TODO (user context menu) timeout member in a channel
