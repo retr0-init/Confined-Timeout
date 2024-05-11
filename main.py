@@ -797,7 +797,6 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
     #TODO TEST (user context menu) timeout member in a channel
     @interactions.user_context_menu("Confined Timeout User")
     async def contextmenu_usr_timeout(self, ctx: interactions.ContextMenuContext) -> None:
-        raise NotImplementedError()
         channel: interactions.GuildChannel = ctx.channel if not hasattr(ctx.channel, "parent_channel") else ctx.channel.parent_channel
         user: interactions.Member = ctx.target
         modal: interactions.Modal = interactions.Modal(
