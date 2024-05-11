@@ -169,6 +169,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         global_admins = [GlobalAdmin(ga[0].id, ga[0].type) for ga in gas]
         channel_moderators = [ChannelModerator(cm[0].id, cm[0].type, cm[0].channel_id) for cm in cms]
         prisoners = [Prisoner(p[0].id, p[0].release_datetime, p[0].channel_id) for p in ps]
+        await self.async_start()
 
     async def async_start(self) -> None:
         await asyncio.sleep(30)
