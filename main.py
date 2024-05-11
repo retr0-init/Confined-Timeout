@@ -814,7 +814,6 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         await modal_ctx.defer()
         success: bool = await self.jail_prisoner(user, minutes, channel, ctx=modal_ctx)
 
-    #TODO TEST (message context menu) timeout member in a channel
     @interactions.message_context_menu("Confined Timeout Msg")
     async def contextmenu_msg_timeout(self, ctx: interactions.ContextMenuContext) -> None:
         channel: interactions.GuildChannel = ctx.channel if not hasattr(ctx.channel, "parent_channel") else ctx.channel.parent_channel
