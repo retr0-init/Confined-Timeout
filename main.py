@@ -205,7 +205,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             return
         for p in prisoners:
             if p.id == prisoner.id and p.channel_id == prisoner.channel_id:
-                prisoners.remove(prisoner)
+                prisoners.remove(p)
                 break
         async with Session() as session:
             await session.execute(
