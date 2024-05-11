@@ -687,7 +687,6 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         pag: Paginator = Paginator.create_from_string(self.bot, f"Global Admin for Confined Timeout:\n{msg}", page_size=1000)
         await pag.send(ctx)
     
-    #TODO view channel moderator
     @module_group_setting.subcommand("view_channel_mod", sub_cmd_description="View Moderators of this channel")
     async def module_group_setting_viewChannelModerator(self, ctx: interactions.SlashContext) -> None:
         channel: interactions.GuildChannel = ctx.channel if not hasattr(ctx.channel, "parent_channel") else ctx.channel.parent_channel
