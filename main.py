@@ -805,7 +805,6 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
     async def contextmenu_msg_timeout(self, ctx: interactions.ContextMenuContext) -> None:
         raise NotImplementedError()
     
-    #TODO TEST (command) release member in a channel
     @module_base.subcommand("release", sub_cmd_description="Revoke a member timeout in this channel")
     @interactions.slash_option(
         "user",
