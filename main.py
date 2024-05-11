@@ -736,7 +736,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             msg += f"\nPrisoners in {ctx.guild.get_channel(cid).mention}:\n"
             for i in pls:
                 msg += f"- {ctx.guild.get_member(i.id).mention} `{interactions.Timestamp.now() - i.release_datatime} minutes left`"
-        pag: Paginator = Paginator.create_from_string(self.bot, f"Moderators in {channel.mention} for Confined Timeout:\n{msg}", page_size=1000)
+        pag: Paginator = Paginator.create_from_string(self.bot, f"Summary for Confined Timeout:\n{msg}", page_size=1000)
         await pag.send(ctx)
     
     #TODO (command) timeout member in a channel
