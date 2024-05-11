@@ -307,15 +307,17 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         if ctx is not None:
             await ctx.send(f"{prisoner_member.mention} is jailed for {duration_minutes} minutes", silent=True)
         # Wait for a certain number of time and unblock the member
-        task = asyncio.create_task(self.release_prisoner_task(duration_minutes=duration_minutes, prisoner=prisoner))
+        task = asyncio.create_task(self.release_prisoner_task(duration_minutes=duration_minutes, prisoner=prisoner), ctx=ctx)
         prisoner_tasks[prisoner.to_tuple()] = task
         task.add_done_callback(lambda:prisoner_tasks.pop(prisoner.to_tuple()))
         return True
 
-    async def release_prisoner_task(self, duration_minutes: int, prisoner: Prisoner) -> None:
+    async def release_prisoner_task(self, duration_minutes: int, prisoner: Prisoner, ctx: interactions.BaseContext = None) -> None:
         try:
             await asyncio.sleep(duration_minutes * 60.0)
             await self.release_prinsoner(prisoner=prisoner)
+            if ctx is not None:
+                await ctxchannel.send(f"{user.mention} is released!", silent=True)
         except asyncio.CancelledError:
             pass
 
@@ -792,7 +794,6 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         await ctx.defer()
         ctxchannel: interactions.GuildChannel = ctx.channel
         success: bool = await self.jail_prisoner(user, minutes, channel, ctx=ctx)
-        await ctxchannel.send(f"{user.mention} is released!", silent=True)
     
     #TODO (user context menu) timeout member in a channel
     @interactions.user_context_menu("Confined Timeout User")
