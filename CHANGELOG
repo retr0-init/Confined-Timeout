@@ -47,7 +47,6 @@
 # 20240511
 - View global admin
 - View Channel Moderator
-- View Summary TEST Draft
-    - Await prisoners to test
+- View Summary
 - Prison timeout member (command) TEST Draft
 - Fix channel mod adding logic
