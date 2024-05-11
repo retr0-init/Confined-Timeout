@@ -190,7 +190,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
     ################ Utility functions STARTS ################
 
     async def release_prinsoner(self, prisoner: Prisoner, ctx: interactions.BaseContext = None) -> None:
-        if prisoner not in prisoners:
+        if not any(i.id == prisoner.id and i.channel_id == prisoner.channel_id for i in prisoners):
             if ctx is not None:
                 await ctx.send("This member is not prisoned!", ephemeral=True)
             return
