@@ -309,7 +309,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         # Wait for a certain number of time and unblock the member
         task = asyncio.create_task(self.release_prisoner_task(duration_minutes=duration_minutes, prisoner=prisoner, ctx=ctx))
         prisoner_tasks[prisoner.to_tuple()] = task
-        task.add_done_callback(lambda:prisoner_tasks.pop(prisoner.to_tuple()))
+        task.add_done_callback(lambda x:prisoner_tasks.pop(prisoner.to_tuple()))
         return True
 
     async def release_prisoner_task(self, duration_minutes: int, prisoner: Prisoner, ctx: interactions.BaseContext = None) -> None:
