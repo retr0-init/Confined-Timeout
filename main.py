@@ -748,7 +748,6 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         pag: Paginator = Paginator.create_from_string(self.bot, f"Summary for Confined Timeout:\n\n{msg}", page_size=1000)
         await pag.send(ctx)
     
-    #TODO TEST (command) timeout member in a channel
     @module_base.subcommand("timeout", sub_cmd_description="Timeout a member in this channel")
     @interactions.slash_option(
         "user",
