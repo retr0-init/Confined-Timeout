@@ -24,7 +24,7 @@
 - `/confined_timeout setting remove_moderator [<user>] [<role>]`
 - `/confined_timeout setting view_moderator`
 - `/confined_timeout setting summary`
-- `/confined_timeout timeout <Member> <Minutes> [Hours] [Days]`
+- `/confined_timeout timeout <Member> <Minutes>`
     - 用户菜单，弹窗输入信息。
     - 信息菜单，弹窗输入信息
 - `/confined_timeout release <Member>`
