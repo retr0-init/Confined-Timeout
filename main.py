@@ -77,6 +77,8 @@ class Prisoner:
     id: int
     release_datetime: datetime.datetime
     channel_id: int
+    def to_tuple(self) -> tuple:
+        return (self.id, self.channel_id)
 
 GLOBAL_ADMIN_USER_CUSTOM_ID: str = "retr0init_confined_timeout_GlobalAdmin_user"
 GLOBAL_ADMIN_ROLE_CUSTOM_ID: str = "retr0init_confined_timeout_GlobalAdmin_role"
@@ -87,6 +89,7 @@ TIMEOUT_DIALOG_CUSTOM_ID: str = "retr0init_confined_timeout_TimeoutDialog"
 global_admins: list[GlobalAdmin] = []
 channel_moderators: list[ChannelModerator] = []
 prisoners: list[Prisoner] = []
+prisoner_tasks: dict[tuple[int], asyncio.Task] = {}
 
 async def my_admin_check(ctx: interactions.BaseContext) -> bool:
     '''
@@ -171,9 +174,14 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         await asyncio.sleep(30)
         cdt: datetime.datetime = datetime.datetime.now()
         for p in prisoners:
-            if cdt >= p.release_datetime.replace(tzinfo=None):
+            duration_minutes: int = (cdt - p.release_datetime.replace(tzinfo=None)).total_seconds / 60
+            if duration_minutes >= 0:
                 # Release the prinsoner
                 await self.release_prinsoner(p)
+            else:
+                task = asyncio.create_task(self.release_prisoner_task(duration_minutes=duration_minutes, prisoner=p))
+                prisoner_tasks[p.to_tuple()] = task
+                task.add_done_callback(lambda:prisoner_tasks.pop(p.to_tuple()))
     
     def drop(self):
         asyncio.create_task(self.async_drop())
@@ -299,9 +307,17 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         if ctx is not None:
             await ctx.send(f"{prisoner_member.mention} is jailed for {duration_minutes} minutes", silent=True)
         # Wait for a certain number of time and unblock the member
-        await asyncio.sleep(duration_minutes * 60.0)
-        await self.release_prinsoner(prisoner=prisoner)
+        task = asyncio.create_task(self.release_prisoner_task(duration_minutes=duration_minutes, prisoner=prisoner))
+        prisoner_tasks[prisoner.to_tuple()] = task
+        task.add_done_callback(lambda:prisoner_tasks.pop(prisoner.to_tuple()))
         return True
+
+    async def release_prisoner_task(self, duration_minutes: int, prisoner: Prisoner) -> None:
+        try:
+            await asyncio.sleep(duration_minutes * 60.0)
+            await self.release_prinsoner(prisoner=prisoner)
+        except asyncio.CancelledError:
+            pass
 
     ################ Utility functions FINISH ################
     ##########################################################
@@ -812,6 +828,8 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             await ctx.send(f"The member {user.mention} is not prisoned!")
             return
         await self.release_prinsoner(prisoner=prisoner, ctx=ctx)
+        if prisoner.to_tuple() in prisoner_tasks:
+            prisoner_tasks[prisoner.to_tuple()].cancel()
 
     @module_base_release.autocomplete("user")
     async def autocomplete_release_user(self, ctx: interactions.AutocompleteContext) -> None:
