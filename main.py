@@ -690,7 +690,6 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
     #TODO view channel moderator
     @module_group_setting.subcommand("view_channel_mod", sub_cmd_description="View Moderators of this channel")
     async def module_group_setting_viewChannelModerator(self, ctx: interactions.SlashContext) -> None:
-        return NotImplementedError()
         channel: interactions.GuildChannel = ctx.channel if not hasattr(ctx.channel, "parent_channel") else ctx.channel.parent_channel
         msg: str = ""
         for i in channel_moderators:
