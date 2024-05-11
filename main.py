@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 #WARNING Modify the original library code: https://github.com/interactions-py/interactions.py/pull/1654
 import interactions
+from interactions.ext.paginators import Paginator
 # Import the os module to get the parent path to the local files
 import os
 # aiofiles module is recommended for file operation
@@ -675,7 +676,17 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
     #TODO view global admin
     @module_group_setting.subcommand("view_global_admin", sub_cmd_description="View all Global Admins")
     async def module_group_setting_viewGlobalAdmin(self, ctx: interactions.SlashContext) -> None:
-        return NotImplementedError()
+        msg: str = ""
+        for i in global_admins:
+            if i.type == MRCTType.USER:
+                msg += f"- User: {ctx.guild.get_member(i.id).mention}\n"
+            elif i.type == MRCTType.ROLE:
+                role: interactions.Role = await ctx.guild.fetch_role(i.id)
+                msg += f"- Role: {role.mention}\n"
+                for u in role.members:
+                    msg += f"\t- User: {u.mention}\n"
+        pag: Paginator = Paginator.create_from_string(self.bot, f"Global Admin for Confined Timeout:\n{msg}", page_size=1000)
+        await pag.send(ctx)
     
     #TODO view channel moderator
     @module_group_setting.subcommand("view_channel_mod", sub_cmd_description="View Moderators of this channel")
