@@ -171,7 +171,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         await asyncio.sleep(30)
         cdt: datetime.datetime = datetime.datetime.now()
         for p in prisoners:
-            if cdt >= p.release_datetime:
+            if cdt >= p.release_datetime.replace(tzinfo=None):
                 # Release the prinsoner
                 await self.release_prinsoner(p)
     
@@ -743,7 +743,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         for cid, pls in ps.items():
             msg += f"\nPrisoners in {ctx.guild.get_channel(cid).mention}:\n"
             for i in pls:
-                timeleft: datetime.timedelta = datetime.datetime.now() - i.release_datetime.replace(tzinfo=None)
+                timeleft: datetime.timedelta = i.release_datetime.replace(tzinfo=None) - datetime.datetime.now()
                 timestring: str = f"{timeleft.total_seconds() / 60} minutes"
                 msg += f"- {ctx.guild.get_member(i.id).mention} `{timestring} left`"
         pag: Paginator = Paginator.create_from_string(self.bot, f"Summary for Confined Timeout:\n\n{msg}", page_size=1000)
