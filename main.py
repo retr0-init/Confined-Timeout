@@ -493,9 +493,9 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             message: interactions.Message = ctx.message
             if not ga_cm:
                 channel: interactions.GuildChannel = ctx.channel if not hasattr(ctx.channel, "parent_channel") else ctx.channel.parent_channel
-            msg_to_send: str = "Added " + "" if ga_cm else channel.name
+            msg_to_send: str = "Added " if ga_cm else f"Added {channel.name}"
             msg_to_send += "Global Admin " if ga_cm else "Channel Moderator "
-            msg_to_send += "as a " + "user:" if gaType == MRCTType.USER else "role:"
+            msg_to_send += "as a user:" if gaType == MRCTType.USER else "as a role:"
             for value in ctx.values:
                 if gaType == MRCTType.USER:
                     value = cast(interactions.Member, value)
@@ -525,7 +525,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                         msg_to_send += f"\n- {value.display_name if gaType == MRCTType.USER else value.name} {value.mention}"
             # Edit the original ephemeral message to hide the select menu
             await ctx.edit_origin(
-                content="Global Admin " if ga_cm else "Channel Moderator " + "user" if gaType == MRCTType.USER else "role" + " set!",
+                content=f"{'Global Admin' if ga_cm else 'Channel Moderator'} {'user' if gaType == MRCTType.USER else 'role'} set!",
                 components=[])
             # The edit above already acknowledged the context so has to send message to channel directly
             await self.send_log_channel(msg_to_send, int("0000FF", 16))
@@ -834,7 +834,8 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
     async def module_group_setting_viewSummary(self, ctx: interactions.SlashContext) -> None:
         channel_config: Config = global_settings[SettingType.LOG_CHANNEL]
         minute_config: Config = global_settings[SettingType.MINUTE_LIMIT]
-        config_msg: str = "Log channel is " + "not set!" if channel_config.setting1 != str(ctx.guild.id) else ctx.guild.get_channel(int(channel_config.setting)).mention
+        config_msg: str = "Log channel is "
+        config_msg += "not set!" if channel_config.setting1 != str(ctx.guild.id) else ctx.guild.get_channel(int(channel_config.setting)).mention
         config_msg += f"\nTimeout Limit is `{minute_config.setting} minutes`\n"
         msg: str = config_msg + "\nGlobal Admins:\n"
         for i in global_admins:
