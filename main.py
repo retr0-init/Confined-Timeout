@@ -182,10 +182,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
     # Record async_start status to prevent duplicated start
     startup_flag: bool = False
     # asyncio locks
-    lock_ugs: asyncio.Lock = asyncio.Lock()
-    lock_release: asyncio.Lock = asyncio.Lock()
-    lock_jail: asyncio.Lock = asyncio.Lock()
-    lock_gacm: asyncio.Lock = asyncio.Lock()
+    lock_db: asyncio.Lock = asyncio.Lock()
 
     ################ Initial functions STARTS ################
 
@@ -255,7 +252,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         if setting1 is not None:
             assert isinstance(setting1, str)
             to_insert["setting1"] = setting1
-        async with self.lock_ugs:
+        async with self.lock_db:
             async with Session() as session:
                 stmt = sqlite.insert(SettingDB).values(
                     [to_insert]
@@ -288,7 +285,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             if p.id == prisoner.id and p.channel_id == prisoner.channel_id:
                 prisoners.remove(p)
                 break
-        async with self.lock_release:
+        async with self.lock_db:
             async with Session() as session:
                 await session.execute(
                     sqldelete(PrisonerDB).
@@ -382,7 +379,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                 await ctx.send("The bot needs to have enough permissions! Please contact technical support!", ephemeral=True)
             return False
         prisoners.append(prisoner)
-        async with self.lock_jail:
+        async with self.lock_db:
             async with Session() as session:
                 session.add(PrisonerDB(
                     id = prisoner.id,
@@ -521,7 +518,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                     _to_add: GlobalAdmin = GlobalAdmin(value.id, gaType)
                     if _to_add not in global_admins:
                         global_admins.append(_to_add)
-                        async with self.lock_gacm:
+                        async with self.lock_db:
                             async with Session() as conn:
                                 conn.add(
                                     GlobalAdminDB(id=_to_add.id, type=_to_add.type)
@@ -532,7 +529,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                     _to_add: ChannelModerator = ChannelModerator(value.id, gaType, channel.id)
                     if _to_add not in channel_moderators:
                         channel_moderators.append(_to_add)
-                        async with self.lock_gacm:
+                        async with self.lock_db:
                             async with Session() as conn:
                                 conn.add(
                                     ModeratorDB(id=_to_add.id, type=_to_add.type, channel_id=_to_add.channel_id)
@@ -636,23 +633,24 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         except ValueError:
             await ctx.send("Input value error! Please contact technical support.", ephemeral=True)
             return
-        async with Session() as session:
-            msg: str = ""
-            if user is not None:
-                ga: GlobalAdmin = GlobalAdmin(user, MRCTType.USER)
-                ga_mention: str = ctx.guild.get_member(ga.id).mention
-                if ga not in global_admins:
-                    await ctx.send(f"{ga_mention} is not a global admin user!", silent=True)
-                    return
-                msg += f"\n- {ga_mention}"
-                global_admins.remove(ga)
-                await session.execute(
-                    sqldelete(GlobalAdminDB).
-                    where(sqlalchemy.and_(
-                        GlobalAdminDB.id == ga.id,
-                        GlobalAdminDB.type == ga.type
-                    ))
-                )
+        async with self.lock_db:
+            async with Session() as session:
+                msg: str = ""
+                if user is not None:
+                    ga: GlobalAdmin = GlobalAdmin(user, MRCTType.USER)
+                    ga_mention: str = ctx.guild.get_member(ga.id).mention
+                    if ga not in global_admins:
+                        await ctx.send(f"{ga_mention} is not a global admin user!", silent=True)
+                        return
+                    msg += f"\n- {ga_mention}"
+                    global_admins.remove(ga)
+                    await session.execute(
+                        sqldelete(GlobalAdminDB).
+                        where(sqlalchemy.and_(
+                            GlobalAdminDB.id == ga.id,
+                            GlobalAdminDB.type == ga.type
+                        ))
+                    )
             if role is not None:
                 ga: GlobalAdmin = GlobalAdmin(role, MRCTType.ROLE)
                 ga_mention: str = ctx.guild.get_role(ga.id).mention
@@ -742,24 +740,25 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             await ctx.send("Input value error! Please contact technical support.", ephemeral=True)
             return
         channel: interactions.GuildChannel = ctx.channel if not hasattr(ctx.channel, "parent_channel") else ctx.channel.parent_channel
-        async with Session() as session:
-            msg: str = ""
-            if user is not None:
-                cm: ChannelModerator = ChannelModerator(user, MRCTType.USER, channel.id)
-                cm_mention: str = ctx.guild.get_member(cm.id).mention
-                if cm not in channel_moderators:
-                    await ctx.send(f"{cm_mention} is not the moderator user of this channel {channel.mention}!", silent=True)
-                    return
-                msg += f"\n- {cm_mention}"
-                channel_moderators.remove(cm)
-                await session.execute(
-                    sqldelete(ModeratorDB).
-                    where(sqlalchemy.and_(
-                        ModeratorDB.id == cm.id,
-                        ModeratorDB.type == cm.type,
-                        ModeratorDB.channel_id == cm.channel_id
-                    ))
-                )
+        async with self.lock_db:
+            async with Session() as session:
+                msg: str = ""
+                if user is not None:
+                    cm: ChannelModerator = ChannelModerator(user, MRCTType.USER, channel.id)
+                    cm_mention: str = ctx.guild.get_member(cm.id).mention
+                    if cm not in channel_moderators:
+                        await ctx.send(f"{cm_mention} is not the moderator user of this channel {channel.mention}!", silent=True)
+                        return
+                    msg += f"\n- {cm_mention}"
+                    channel_moderators.remove(cm)
+                    await session.execute(
+                        sqldelete(ModeratorDB).
+                        where(sqlalchemy.and_(
+                            ModeratorDB.id == cm.id,
+                            ModeratorDB.type == cm.type,
+                            ModeratorDB.channel_id == cm.channel_id
+                        ))
+                    )
             if role is not None:
                 cm: ChannelModerator = ChannelModerator(role, MRCTType.ROLE, channel.id)
                 cm_mention: str = ctx.guild.get_role(cm.id).mention
