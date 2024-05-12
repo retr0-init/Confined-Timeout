@@ -181,6 +181,11 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
     )
     # Record async_start status to prevent duplicated start
     startup_flag: bool = False
+    # asyncio locks
+    lock_ugs: asyncio.Lock = asyncio.Lock()
+    lock_release: asyncio.Lock = asyncio.Lock()
+    lock_jail: asyncio.Lock = asyncio.Lock()
+    lock_gacm: asyncio.Lock = asyncio.Lock()
 
     ################ Initial functions STARTS ################
 
@@ -250,19 +255,20 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         if setting1 is not None:
             assert isinstance(setting1, str)
             to_insert["setting1"] = setting1
-        async with Session() as session:
-            stmt = sqlite.insert(SettingDB).values(
-                [to_insert]
-            )
-            stmt = stmt.on_conflict_do_update(
-                index_elements = ['type'],
-                set_ = dict(
-                    setting = stmt.excluded.setting,
-                    setting1 = stmt.excluded.setting1
+        async with self.lock_ugs:
+            async with Session() as session:
+                stmt = sqlite.insert(SettingDB).values(
+                    [to_insert]
                 )
-            )
-            await session.execute(stmt)
-            await session.commit()
+                stmt = stmt.on_conflict_do_update(
+                    index_elements = ['type'],
+                    set_ = dict(
+                        setting = stmt.excluded.setting,
+                        setting1 = stmt.excluded.setting1
+                    )
+                )
+                await session.execute(stmt)
+                await session.commit()
 
     async def release_prinsoner(self, prisoner: Prisoner, ctx: interactions.BaseContext = None) -> None:
         if not any(i.id == prisoner.id and i.channel_id == prisoner.channel_id for i in prisoners):
@@ -282,14 +288,15 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             if p.id == prisoner.id and p.channel_id == prisoner.channel_id:
                 prisoners.remove(p)
                 break
-        async with Session() as session:
-            await session.execute(
-                sqldelete(PrisonerDB).
-                where(sqlalchemy.and_(
-                    PrisonerDB.id == prisoner.id,
-                    PrisonerDB.channel_id == prisoner.channel_id
-                ))
-            )
+        async with self.lock_release:
+            async with Session() as session:
+                await session.execute(
+                    sqldelete(PrisonerDB).
+                    where(sqlalchemy.and_(
+                        PrisonerDB.id == prisoner.id,
+                        PrisonerDB.channel_id == prisoner.channel_id
+                    ))
+                )
             await session.commit()
         if ctx is not None:
             await ctx.send(f"The prisoner {ctx.guild.get_member(prisoner.id).mention} is released!")
@@ -375,13 +382,14 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                 await ctx.send("The bot needs to have enough permissions! Please contact technical support!", ephemeral=True)
             return False
         prisoners.append(prisoner)
-        async with Session() as session:
-            session.add(PrisonerDB(
-                id = prisoner.id,
-                channel_id = prisoner.channel_id,
-                release_datetime = prisoner.release_datetime
-            ))
-            await session.commit()
+        async with self.lock_jail:
+            async with Session() as session:
+                session.add(PrisonerDB(
+                    id = prisoner.id,
+                    channel_id = prisoner.channel_id,
+                    release_datetime = prisoner.release_datetime
+                ))
+                await session.commit()
         if ctx is not None:
             await ctx.send(f"{prisoner_member.mention} is jailed for {duration_minutes} minutes", silent=True)
         await self.send_log_channel(f"{prisoner_member.mention} is jailed for {duration_minutes} minutes", int("FFFF00", 16))
@@ -513,21 +521,23 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                     _to_add: GlobalAdmin = GlobalAdmin(value.id, gaType)
                     if _to_add not in global_admins:
                         global_admins.append(_to_add)
-                        async with Session() as conn:
-                            conn.add(
-                                GlobalAdminDB(id=_to_add.id, type=_to_add.type)
-                            )
-                            await conn.commit()
+                        async with self.lock_gacm:
+                            async with Session() as conn:
+                                conn.add(
+                                    GlobalAdminDB(id=_to_add.id, type=_to_add.type)
+                                )
+                                await conn.commit()
                         msg_to_send += f"\n- {value.display_name if gaType == MRCTType.USER else value.name} {value.mention}"
                 else:
                     _to_add: ChannelModerator = ChannelModerator(value.id, gaType, channel.id)
                     if _to_add not in channel_moderators:
                         channel_moderators.append(_to_add)
-                        async with Session() as conn:
-                            conn.add(
-                                ModeratorDB(id=_to_add.id, type=_to_add.type, channel_id=_to_add.channel_id)
-                            )
-                            await conn.commit()
+                        async with self.lock_gacm:
+                            async with Session() as conn:
+                                conn.add(
+                                    ModeratorDB(id=_to_add.id, type=_to_add.type, channel_id=_to_add.channel_id)
+                                )
+                                await conn.commit()
                         msg_to_send += f"\n- {value.display_name if gaType == MRCTType.USER else value.name} {value.mention}"
             # Edit the original ephemeral message to hide the select menu
             await ctx.edit_origin(
