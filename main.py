@@ -149,6 +149,8 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         name="setting",
         description="Settings of the Confined Timeout system"
     )
+    # Record async_start status to prevent duplicated start
+    startup_flag: bool = False
 
     ################ Initial functions STARTS ################
 
@@ -172,6 +174,8 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         await self.async_start()
 
     async def async_start(self) -> None:
+        if self.startup_flag:
+            return
         await asyncio.sleep(30)
         cdt: datetime.datetime = datetime.datetime.now()
         for p in prisoners:
@@ -183,6 +187,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                 task = asyncio.create_task(self.release_prisoner_task(duration_minutes=duration_minutes, prisoner=p))
                 prisoner_tasks[p.to_tuple()] = task
                 task.add_done_callback(lambda:prisoner_tasks.pop(p.to_tuple()))
+        self.startup_flag = True
     
     def drop(self):
         asyncio.create_task(self.async_drop())

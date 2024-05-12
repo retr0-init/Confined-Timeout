@@ -56,3 +56,6 @@
 - Release Member from channel (context menu)
 - Prison timeout member (user context menu)
 - Prison timeout member (message context menu)
+
+# 20240512
+- Startup status flag
