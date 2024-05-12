@@ -36,6 +36,7 @@ import sqlalchemy
 from sqlalchemy import select as sqlselect
 from sqlalchemy import delete as sqldelete
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine, async_sessionmaker
+import sqlalchemy.dialects.sqlite as sqlite
 
 from .model import GlobalAdminDB, ModeratorDB, PrisonerDB, SettingDB, DBBase
 
@@ -247,7 +248,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             assert isinstance(setting1, str)
             to_insert["setting1"] = setting1
         async with Session() as session:
-            stmt = sqlalchemy.insert(SettingDB).values(
+            stmt = sqlite.insert(SettingDB).values(
                 [to_insert]
             )
             stmt = stmt.on_conflict_do_update(
