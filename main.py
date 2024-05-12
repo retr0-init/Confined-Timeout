@@ -838,7 +838,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         channel_config: Config = global_settings[SettingType.LOG_CHANNEL]
         minute_config: Config = global_settings[SettingType.MINUTE_LIMIT]
         config_msg: str = "Log channel is "
-        config_msg += "not set!" if str(ctx.guild.id) not in channel_config.setting1 else ctx.guild.get_channel(int(channel_config.setting)).mention
+        config_msg += "not set!" if str(ctx.guild.id) != channel_config.setting1 else ctx.guild.get_channel(int(channel_config.setting)).mention
         config_msg += f"\nTimeout Limit is `{minute_config.setting} minutes`\n"
         msg: str = config_msg + "\nGlobal Admins:\n"
         for i in global_admins:
