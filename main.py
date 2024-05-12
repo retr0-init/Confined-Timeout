@@ -507,7 +507,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                     value = cast(interactions.Member, value)
                     if value.bot:
                         continue
-                elif gaType == MRCType.ROLE:
+                elif gaType == MRCTType.ROLE:
                     value = cast(interactions.Role, value)
                 if ga_cm:
                     _to_add: GlobalAdmin = GlobalAdmin(value.id, gaType)
