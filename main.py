@@ -663,6 +663,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         user: Optional[interactions.User] = ctx.guild.get_member(user) if user is not None else None
         role: Optional[interactions.Role] = ctx.guild.get_role(role) if role is not None else None
         await ctx.send(f"Removed global admins:\n{'- '+user.mention if user is not None else ''}\n{'- '+role.mention if role is not None else ''}")
+        await self.send_log_channel(f"Removed global admins:\n{'- '+user.mention if user is not None else ''}\n{'- '+role.mention if role is not None else ''}", int("FF00FF", 16))
     
     @module_group_setting_removeGlobalAdmin.autocomplete("user")
     async def autocomplete_removeGlobalAdmin_user(self, ctx: interactions.AutocompleteContext) -> None:
@@ -770,6 +771,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         user: Optional[interactions.User] = ctx.guild.get_member(user) if user is not None else None
         role: Optional[interactions.Role] = ctx.guild.get_role(role) if role is not None else None
         await ctx.send(f"Removed channel moderator in {channel.mention}:\n{'- '+user.mention if user is not None else ''}\n{'- '+role.mention if role is not None else ''}")
+        await self.send_log_channel(f"Removed channel moderator in {channel.mention}:\n{'- '+user.mention if user is not None else ''}\n{'- '+role.mention if role is not None else ''}", int("FF00FF", 16))
 
     @module_group_setting_removeChannelModerator.autocomplete("user")
     async def autocomplete_removeChannelModerator_user(self, ctx: interactions.AutocompleteContext) -> None:
