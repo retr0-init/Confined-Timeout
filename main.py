@@ -293,7 +293,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             await session.commit()
         if ctx is not None:
             await ctx.send(f"The prisoner {ctx.guild.get_member(prisoner.id).mention} is released!")
-        await ctx.send_log_channel(f"The prisoner {ctx.guild.get_member(prisoner.id).mention} is released!", int("00FF00", 16))
+        await self.send_log_channel(f"The prisoner {ctx.guild.get_member(prisoner.id).mention} is released!", int("00FF00", 16))
 
     def check_prisoner(self, prisoner_member: interactions.Member, duration_minutes: int, channel: Union[interactions.GuildChannel, interactions.ThreadChannel]) -> tuple[bool, Prisoner]:
         channel_id: int = channel.id if not hasattr(channel, "parent_channel") else channel.parent_channel.id
