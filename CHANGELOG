@@ -59,3 +59,8 @@
 
 # 20240512
 - Startup status flag
+- Added global settings
+    - Logging channel
+    - Timeout Limit
+- Remove code duplication
+- Updated `README.md`

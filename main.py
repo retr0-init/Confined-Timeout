@@ -30,14 +30,14 @@ import asyncio
 from enum import Enum, unique
 from dataclasses import dataclass
 import datetime
-from typing import Union, cast, Callable, Awaitable, Optional
+from typing import Union, cast, Callable, Awaitable, Optional, Self
 
 import sqlalchemy
 from sqlalchemy import select as sqlselect
 from sqlalchemy import delete as sqldelete
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine, async_sessionmaker
 
-from .model import GlobalAdminDB, ModeratorDB, PrisonerDB, DBBase
+from .model import GlobalAdminDB, ModeratorDB, PrisonerDB, SettingDB, DBBase
 
 engine: AsyncEngine = create_async_engine(f"sqlite+aiosqlite:///{os.path.dirname(__file__)}/confined_timeout_db.db")
 Session = async_sessionmaker(engine)
@@ -54,6 +54,11 @@ def do_begin(conn):
 class MRCTType(int, Enum):
     USER = 1
     ROLE = 2
+
+@unique
+class SettingType(int, Enum):
+    LOG_CHANNEL = 0
+    MINUTE_LIMIT = 1
 
 @dataclass
 class GlobalAdmin:
@@ -80,6 +85,29 @@ class Prisoner:
     def to_tuple(self) -> tuple:
         return (self.id, self.channel_id)
 
+@dataclass
+class Config:
+    '''Configuration Data Class'''
+    __slots__ = ('type', 'setting','setting1')
+    type: SettingType
+    setting: int
+    setting1: Optional[str]
+    def upsert(self, setting_list: list[Self]) -> None:
+        added: bool = False
+        for i, conf in enumerate(setting_list):
+            if self.type == conf.type:
+                setting_list[i] = self
+                added = True
+                break
+        if not added:
+            setting_list.append(self)
+        # Sort the list according to setting type
+        __class__.sortList(setting_list)
+
+    @staticmethod
+    def sortList(setting_list: list[Self]) -> None:
+        setting_list.sort(key=lambda a:a.type)
+
 GLOBAL_ADMIN_USER_CUSTOM_ID: str = "retr0init_confined_timeout_GlobalAdmin_user"
 GLOBAL_ADMIN_ROLE_CUSTOM_ID: str = "retr0init_confined_timeout_GlobalAdmin_role"
 CHANNEL_MODERATOR_USER_CUSTOM_ID: str = "retr0init_confined_timeout_ChannelModerator_user"
@@ -90,6 +118,9 @@ global_admins: list[GlobalAdmin] = []
 channel_moderators: list[ChannelModerator] = []
 prisoners: list[Prisoner] = []
 prisoner_tasks: dict[tuple[int], asyncio.Task] = {}
+global_settings: list[Config] = []
+for _ in SettingType:
+    Config(_, 600, None).upsert(global_settings)
 
 async def my_admin_check(ctx: interactions.BaseContext) -> bool:
     '''
@@ -168,9 +199,12 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             gas = await conn.execute(sqlselect(GlobalAdminDB))
             cms = await conn.execute(sqlselect(ModeratorDB))
             ps  = await conn.execute(sqlselect(PrisonerDB))
+            gss = await conn.execute(sqlselect(SettingDB))
         global_admins = [GlobalAdmin(ga[0].id, ga[0].type) for ga in gas]
         channel_moderators = [ChannelModerator(cm[0].id, cm[0].type, cm[0].channel_id) for cm in cms]
         prisoners = [Prisoner(p[0].id, p[0].release_datetime, p[0].channel_id) for p in ps]
+        for gs in gss:
+            Config(gs.type, gs.setting, gs.setting1).upsert(global_settings)
         await self.async_start()
 
     async def async_start(self) -> None:
@@ -203,6 +237,29 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
     ##########################################################
     ################ Utility functions STARTS ################
 
+    async def update_global_setting(self, confType: SettingType, setting: int, setting1: Optional[str] = None) -> None:
+        assert isinstance(confType, int)
+        assert isinstance(setting, int)
+        conf: Config = Config(confType, setting, setting1)
+        conf.upsert(global_settings)
+        to_insert: dict = {"type": confType, "setting": setting}
+        if setting1 is not None:
+            assert isinstance(setting1, str)
+            to_insert["setting1"] = setting1
+        async with Session() as session:
+            stmt = sqlalchemy.insert(SettingDB).values(
+                [to_insert]
+            )
+            stmt = stmt.on_conflict_do_update(
+                index_elements = ['type'],
+                set_ = dict(
+                    setting = stmt.excluded.setting,
+                    setting1 = stmt.excluded.setting1
+                )
+            )
+            await session.execute(stmt)
+            await session.commit()
+
     async def release_prinsoner(self, prisoner: Prisoner, ctx: interactions.BaseContext = None) -> None:
         if not any(i.id == prisoner.id and i.channel_id == prisoner.channel_id for i in prisoners):
             if ctx is not None:
@@ -232,6 +289,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             await session.commit()
         if ctx is not None:
             await ctx.send(f"The prisoner {ctx.guild.get_member(prisoner.id).mention} is released!")
+        await ctx.send_log_channel(f"The prisoner {ctx.guild.get_member(prisoner.id).mention} is released!", int("00FF00", 16))
 
     def check_prisoner(self, prisoner_member: interactions.Member, duration_minutes: int, channel: Union[interactions.GuildChannel, interactions.ThreadChannel]) -> tuple[bool, Prisoner]:
         channel_id: int = channel.id if not hasattr(channel, "parent_channel") else channel.parent_channel.id
@@ -262,6 +320,13 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         if res_user or res_role:
             if ctx is not None:
                 await ctx.send("You cannot jail channel moderator!", ephemeral=True)
+            return False
+
+        # Test whether the jail duration is above the upper limit
+        minute_limit: int = global_settings[SettingType.MINUTE_LIMIT].setting
+        if duration_minutes > minute_limit:
+            if ctx is not None:
+                await ctx.send(f"You cannot jail a member over {minute_limit} minutes!", ephemeral=True)
             return False
 
         # Test whether the channel is a ForumPost channel
@@ -312,6 +377,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             await session.commit()
         if ctx is not None:
             await ctx.send(f"{prisoner_member.mention} is jailed for {duration_minutes} minutes", silent=True)
+        await self.send_log_channel(f"{prisoner_member.mention} is jailed for {duration_minutes} minutes", int("FFFF00", 16))
         # Wait for a certain number of time and unblock the member
         task = asyncio.create_task(self.release_prisoner_task(duration_minutes=duration_minutes, prisoner=prisoner, ctx=ctx))
         prisoner_tasks[prisoner.to_tuple()] = task
@@ -328,9 +394,54 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         except asyncio.CancelledError:
             pass
 
+    async def send_log_channel(self, message: str, colour: int = 0) -> None:
+        channel_config: Config = global_settings[SettingType.LOG_CHANNEL]
+        guild: interactions.Guild = await self.bot.fetch_guild(int(channel_config.setting1))
+        channel: interactions.MessageableMixin = await guild.fetch_channel(channel_config.setting)
+        await channel.send(embed=interactions.Embed(
+            title="Confined Timeout",
+            description=message,
+            color=colour,
+            timestamp=interactions.Timestamp.now()
+        ))
+        pass
+
     ################ Utility functions FINISH ################
     ##########################################################
     ################ Command functions STARTS ################
+
+    @module_group_setting.subcommand("limit", sub_cmd_description="Set the minute timeout limitation")
+    @interactions.slash_option(
+        name = "minute",
+        description = "The timeout limit",
+        required = True,
+        opt_type = interactions.OptionType.INTEGER,
+        min_value=1
+    )
+    @interactions.check(my_admin_check)
+    async def module_group_setting_setLimit(self, ctx: interactions.SlashContext, minute: int) -> None:
+        """
+        Set the upper limit of timeout duration in minutes
+        """
+        await self.update_global_setting(SettingType.MINUTE_LIMIT, minute)
+        await ctx.send(f"Timeout Upper Limit is {minute} minutes!")
+
+    @module_group_setting.subcommand("log_channel", sub_cmd_description="Set the channel to output log")
+    @interactions.slash_option(
+        name = "channel",
+        description="The channel to output the logs",
+        required = True,
+        opt_type = interactions.OptionType.CHANNEL
+    )
+    async def module_group_setting_setLogChannel(self, ctx: interactions.SlashContext, channel: interactions.GuildChannel) -> None:
+        """
+        Set the channel to log the moduel actions
+        """
+        if not hasattr(channel, "send"):
+            await ctx.send(f"Message cannot be sent in this channel {channel.mention}", ephemeral=True)
+        await self.update_global_setting(SettingType.LOG_CHANNEL, channel.id, str(ctx.guild.id))
+        await ctx.send(f"Log channel is set to {channel.mention}")
+        await self.send_log_channel(f"Log channel is set to {channel.mention}")
 
     @module_group_setting.subcommand("set_global_admin", sub_cmd_description="Set the Global Admin")
     @interactions.slash_option(
@@ -367,53 +478,64 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                 )
                 await ctx.send("Set the global admin ROLE:", components=[component_role], ephemeral=True)
 
-    @interactions.component_callback(GLOBAL_ADMIN_USER_CUSTOM_ID)
-    async def callback_setGA_component_user(self, ctx: interactions.ComponentContext) -> None:
+    async def setGACM_component(self, ctx: interaction.ComponentContext, ga_cm: bool, gaType: MRCTType) -> None:
+        """
+        Component callback function
+        ctx: ComponentContext   The component context
+        ga_cm: bool             Whether is Global Admin (True) or Channel Moderator (False)
+        gaType: MRCTType        The type of setting
+        """
         if await my_admin_check(ctx):
             message: interactions.Message = ctx.message
-            msg_to_send: str = "Added global admin as a member:"
-            for user in ctx.values:
-                user = cast(interactions.Member, user)
-                if user.bot:
-                    continue
-                _to_add: GlobalAdmin = GlobalAdmin(user.id, MRCTType.USER)
-                if _to_add not in global_admins:
-                    global_admins.append(_to_add)
-                    async with Session() as conn:
-                        conn.add(
-                            GlobalAdminDB(id=_to_add.id, type=_to_add.type)
-                        )
-                        await conn.commit()
-                    msg_to_send += f"\n- {user.display_name} {user.mention}"
+            if not ga_cm:
+                channel: interactions.GuildChannel = ctx.channel if not hasattr(ctx.channel, "parent_channel") else ctx.channel.parent_channel
+            msg_to_send: str = "Added " + "" if ga_cm else channel.name +\
+                "Global Admin " if ga_cm else "Channel Moderator " +\
+                    "as a " + "user" if gaType == MRCTType.USER else "role" + ":"
+            for value in ctx.values:
+                if gaType == MRCTType.USER:
+                    value = cast(interactions.Member, value)
+                    if value.bot:
+                        continue
+                elif gaType == MRCType.ROLE:
+                    value = cast(interactions.Role, value)
+                if ga_cm:
+                    _to_add: GlobalAdmin = GlobalAdmin(value.id, gaType)
+                    if _to_add not in global_admins:
+                        global_admins.append(_to_add)
+                        async with Session() as conn:
+                            conn.add(
+                                GlobalAdminDB(id=_to_add.id, type=_to_add.type)
+                            )
+                            await conn.commit()
+                        msg_to_send += f"\n- {value.display_name if gaType == MRCTType.USER else value.name} {value.mention}"
+                else:
+                    _to_add: ChannelModerator = ChannelModerator(user.id, gaType, channel.id)
+                    if _to_add not in channel_moderators:
+                        channel_moderators.append(_to_add)
+                        async with Session() as conn:
+                            conn.add(
+                                ModeratorDB(id=_to_add.id, type=_to_add.type, channel_id=_to_add.channel_id)
+                            )
+                            await conn.commit()
+                        msg_to_send += f"\n- {value.display_name if gaType == MRCTType.USER else value.name} {value.mention}"
             # Edit the original ephemeral message to hide the select menu
-            await ctx.edit_origin(content="Global admin user set!", components=[])
+            await ctx.edit_origin(
+                content="Global Admin " if ga_cm else "Channel Moderator " + "user" if gaType == MRCTType.USER else "role" + " set!",
+                components=[])
             # The edit above already acknowledged the context so has to send message to channel directly
-            await ctx.channel.send(msg_to_send)
+            await self.send_log_channel(msg_to_send, int("0000FF", 16))
             return
         await ctx.send("You do not have the permission to do so!", ephemeral=True)
+        pass
+
+    @interactions.component_callback(GLOBAL_ADMIN_USER_CUSTOM_ID)
+    async def callback_setGA_component_user(self, ctx: interactions.ComponentContext) -> None:
+        await self.setGACM_component(ctx, True, MRCTType.USER)
 
     @interactions.component_callback(GLOBAL_ADMIN_ROLE_CUSTOM_ID)
     async def callback_setGA_component_role(self, ctx: interactions.ComponentContext) -> None:
-        if await my_admin_check(ctx):
-            message: interactions.Message = ctx.message
-            msg_to_send: str = "Added global admin as a role:"
-            for role in ctx.values:
-                role = cast(interactions.Role, role)
-                _to_add: GlobalAdmin = GlobalAdmin(role.id, MRCTType.ROLE)
-                if _to_add not in global_admins:
-                    global_admins.append(_to_add)
-                    async with Session() as conn:
-                        conn.add(
-                            GlobalAdminDB(id=_to_add.id, type=_to_add.type)
-                        )
-                        await conn.commit()
-                    msg_to_send += f"\n- {role.name} {role.mention}"
-            # Edit the original ephemeral message to hide the select menu
-            await ctx.edit_origin(content="Global admin role set!", components=[])
-            # The edit above already acknowledged the context so has to send message to channel directly
-            await ctx.channel.send(msg_to_send)
-            return
-        await ctx.send("You do not have the permission to do so!", ephemeral=True)
+        await self.setGACM_component(ctx, True, MRCTType.ROLE)
 
 
     @module_group_setting.subcommand("set_moderator", sub_cmd_description="Set the moderator in this channel")
@@ -454,53 +576,11 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
 
     @interactions.component_callback(CHANNEL_MODERATOR_USER_CUSTOM_ID)
     async def callback_setCM_component_user(self, ctx: interactions.ComponentContext) -> None:
-        if await my_admin_check(ctx):
-            message: interactions.Message = ctx.message
-            channel: interactions.GuildChannel = ctx.channel if not hasattr(ctx.channel, "parent_channel") else ctx.channel.parent_channel
-            msg_to_send: str = f"Added channel {ctx.channel.name} moderator as a member:"
-            for user in ctx.values:
-                user = cast(interactions.Member, user)
-                if user.bot:
-                    continue
-                _to_add: ChannelModerator = ChannelModerator(user.id, MRCTType.USER, channel.id)
-                if _to_add not in channel_moderators:
-                    channel_moderators.append(_to_add)
-                    async with Session() as conn:
-                        conn.add(
-                            ModeratorDB(id=_to_add.id, type=_to_add.type, channel_id=_to_add.channel_id)
-                        )
-                        await conn.commit()
-                    msg_to_send += f"\n- {user.display_name} {user.mention}"
-            # Edit the original ephemeral message to hide the select menu
-            await ctx.edit_origin(content="Channel Moderator user set!", components=[])
-            # The edit above already acknowledged the context so has to send message to channel directly
-            await ctx.channel.send(msg_to_send)
-            return
-        await ctx.send("You do not have the permission to do so!", ephemeral=True)
+        await self.setGACM_component(ctx, False, MRCTType.USER)
 
     @interactions.component_callback(CHANNEL_MODERATOR_ROLE_CUSTOM_ID)
     async def callback_setCM_component_role(self, ctx: interactions.ComponentContext) -> None:
-        if await my_admin_check(ctx):
-            message: interactions.Message = ctx.message
-            channel: interactions.GuildChannel = ctx.channel if not hasattr(ctx.channel, "parent_channel") else ctx.channel.parent_channel
-            msg_to_send: str = "Added channel moderator as a role:"
-            for role in ctx.values:
-                role = cast(interactions.Role, role)
-                _to_add: ChannelModerator = ChannelModerator(role.id, MRCTType.ROLE, channel.id)
-                if _to_add not in channel_moderators:
-                    channel_moderators.append(_to_add)
-                    async with Session() as conn:
-                        conn.add(
-                            ModeratorDB(id=_to_add.id, type=_to_add.type, channel_id=_to_add.channel_id)
-                        )
-                        await conn.commit()
-                    msg_to_send += f"\n- {role.name} {role.mention}"
-            # Edit the original ephemeral message to hide the select menu
-            await ctx.edit_origin(content="Channel Moderator role set!", components=[])
-            # The edit above already acknowledged the context so has to send message to channel directly
-            await ctx.channel.send(msg_to_send)
-            return
-        await ctx.send("You do not have the permission to do so!", ephemeral=True)
+        await self.setGACM_component(ctx, False, MRCTType.USER)
 
     @module_group_setting.subcommand("remove_global_admin", sub_cmd_description="Remove the Global Admin")
     @interactions.slash_option(
@@ -801,10 +881,18 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         await ctx.defer()
         success: bool = await self.jail_prisoner(user, minutes, channel, ctx=ctx)
     
-    @interactions.user_context_menu("Confined Timeout User")
-    async def contextmenu_usr_timeout(self, ctx: interactions.ContextMenuContext) -> None:
+    async def cmd_timeout(self, ctx: interactions.ContextMenuContext, is_msg: bool):
+        """
+        Timeout function for context menu command usage
+        ctx: ContextMenuContext Interactions Context Menu Context
+        is_msg: bool            Whether this is used for message context menu
+        """
         channel: interactions.GuildChannel = ctx.channel if not hasattr(ctx.channel, "parent_channel") else ctx.channel.parent_channel
-        user: interactions.Member = ctx.target
+        if is_msg:
+            msg: interactions.Message = ctx.target
+            user: interactions.Member = msg.author
+        else:
+            user: interactions.Member = ctx.target
         modal: interactions.Modal = interactions.Modal(
             interactions.ShortText(label="Minutes to timeout. Integer, e.g. 10"),
             title=f"Timeout {user.id} in {channel.name}"
@@ -818,28 +906,41 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             await modal_ctx.send("The input is not integer!", ephemeral=True)
             return
         await modal_ctx.defer()
-        success: bool = await self.jail_prisoner(user, minutes, channel, ctx=modal_ctx)
+        success: bool = await self.jail_prisoner(user, minutes, channel, ctx=modal_ctx, reason=msg.content if is_msg else "")
+
+    @interactions.user_context_menu("Confined Timeout User")
+    async def contextmenu_usr_timeout(self, ctx: interactions.ContextMenuContext) -> None:
+        self.cmd_timeout(ctx, is_msg=False)
 
     @interactions.message_context_menu("Confined Timeout Msg")
     async def contextmenu_msg_timeout(self, ctx: interactions.ContextMenuContext) -> None:
-        channel: interactions.GuildChannel = ctx.channel if not hasattr(ctx.channel, "parent_channel") else ctx.channel.parent_channel
-        msg: interactions.Message = ctx.target
-        user: interactions.Member = msg.author
-        modal: interactions.Modal = interactions.Modal(
-            interactions.ShortText(label="Minutes to timeout. Integer, e.g. 10"),
-            title=f"Timeout {user.id} in {channel.name}"
-        )
-        await ctx.send_modal(modal=modal)
-        modal_ctx: interactions.ModalContext = await ctx.bot.wait_for_modal(modal)
-        short_text: str = modal_ctx.responses[modal.components[0].custom_id]
-        try:
-            minutes: int = int(short_text)
-        except ValueError:
-            await modal_ctx.send("The input is not integer!", ephemeral=True)
-            return
-        await modal_ctx.defer()
-        success: bool = await self.jail_prisoner(user, minutes, channel, ctx=modal_ctx, reason=msg.content)
+        self.cmd_timeout(ctx, is_msg=True)
     
+    async def cmd_release(
+        self,
+        ctx: Union[interactions.SlashContext, interactions.ContextMenuContext],
+        is_cmd: bool,
+        user: Optional[int] = None) -> None:
+        """
+        Release function for command usage
+        ctx: Union[SlashContext, ContextMenuContext]    The interactions context
+        is_cmd: bool                                    Whether this is used in command or context menu
+        user: Optional[int]                             (Optional) The user id
+        """
+        channel: interactions.GuildChannel = ctx.channel if not hasattr(ctx.channel, "parent_channel") else ctx.channel.parent_channel
+        if is_cmd:
+            assert user is not None
+            user: interactions.Member = await ctx.guild.fetch_member(user)
+        else:
+            user: interactions.Member = ctx.target
+        prisoned, prisoner = self.check_prisoner(user, 1, channel)
+        if not prisoned:
+            await ctx.send(f"The member {user.mention} is not prisoned!")
+            return
+        await self.release_prinsoner(prisoner=prisoner, ctx=ctx)
+        if prisoner.to_tuple() in prisoner_tasks:
+            prisoner_tasks[prisoner.to_tuple()].cancel()
+
     @module_base.subcommand("release", sub_cmd_description="Revoke a member timeout in this channel")
     @interactions.slash_option(
         "user",
@@ -850,21 +951,13 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
     )
     @interactions.check(my_channel_moderator_check)
     async def module_base_release(self, ctx: interactions.SlashContext, user: str) -> None:
-        channel: interactions.GuildChannel = ctx.channel if not hasattr(ctx.channel, "parent_channel") else ctx.channel.parent_channel
         try:
             # Discord cannot transfer big integer so using string and convert to integer instead
             user = int(user) if user is not None else None
         except ValueError:
             await ctx.send("Input value error! Please contact technical support.", ephemeral=True)
             return
-        user: interactions.Member = await ctx.guild.fetch_member(user)
-        prisoned, prisoner = self.check_prisoner(user, 1, channel)
-        if not prisoned:
-            await ctx.send(f"The member {user.mention} is not prisoned!")
-            return
-        await self.release_prinsoner(prisoner=prisoner, ctx=ctx)
-        if prisoner.to_tuple() in prisoner_tasks:
-            prisoner_tasks[prisoner.to_tuple()].cancel()
+        await self.cmd_release(ctx, is_cmd=True, user=user)
 
     @module_base_release.autocomplete("user")
     async def autocomplete_release_user(self, ctx: interactions.AutocompleteContext) -> None:
@@ -885,12 +978,4 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
     
     @interactions.user_context_menu("Confined Release")
     async def contextmenu_usr_release(self, ctx: interactions.ContextMenuContext) -> None:
-        channel: interactions.GuildChannel = ctx.channel if not hasattr(ctx.channel, "parent_channel") else ctx.channel.parent_channel
-        user: interactions.Member = ctx.target
-        prisoned, prisoner = self.check_prisoner(user, 1, channel)
-        if not prisoned:
-            await ctx.send(f"The member {user.mention} is not prisoned!")
-            return
-        await self.release_prinsoner(prisoner=prisoner, ctx=ctx)
-        if prisoner.to_tuple() in prisoner_tasks:
-            prisoner_tasks[prisoner.to_tuple()].cancel()
+        await self.cmd_release(ctx, is_cmd=False, user=user)

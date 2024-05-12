@@ -15,8 +15,11 @@
 - GlobalAdmin: ID (INTEGER), Type (INTEGER)
 - Moderator: ID (INTEGER), Type (INTEGER), ChannelID (INTEGER)
 - Prisoner: ID (INTEGER), DateTimeRelease (DATETIME), ChannelID (INTEGER)
+- Setting: Type (INTEGER), Setting (INTEGER), SETTING1 (STRING(100))
 
 ## 命令
+- `/confined_timeout setting limit <minute>`
+- `/confined_timeout setting log_channel <channel>`
 - `/confined_timeout setting set_global_admin`
 - `/confined_timeout setting remove_global_admin [<user>] [<role>]`
 - `/confined_timeout setting view_global_admin`
@@ -44,8 +47,11 @@ In contrast:
 - GlobalAdmin: ID (INTEGER), Type (INTEGER)
 - Moderator: ID (INTEGER), Type (INTEGER), ChannelID (INTEGER)
 - Prisoner: ID (INTEGER), DateTimeRelease (DATETIME), ChannelID (INTEGER)
+- Setting: Type (INTEGER), Setting (INTEGER), SETTING1 (STRING(100))
 
 ## Commands
+- `/confined_timeout setting limit <minute>`
+- `/confined_timeout setting log_channel <channel>`
 - `/confined_timeout setting set_global_admin`
 - `/confined_timeout setting remove_global_admin [<user>] [<role>]`
 - `/confined_timeout setting view_global_admin`

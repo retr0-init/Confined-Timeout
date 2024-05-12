@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 import sqlalchemy
-from sqlalchemy import DateTime, BigInteger
+from sqlalchemy import DateTime, BigInteger, String
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
@@ -60,3 +60,11 @@ class PrisonerDB(DBBase):
 
     def __repr__(self) -> str:
         return f"PrisonerDB(uid={self.uid!r}, id={self.id!r}, channel_id={self.channel_id!r}, release_datetime={self.release_datetime!r})"
+
+class SettingDB(DBBase):
+    __tablename__ = "SettingDB"
+
+    type:           Mapped[int] = mapped_column(nullable=False, primary_key=True, unique=True)
+    setting:        Mapped[int] = mapped_column(BigInteger, nullable=False)
+    # Reserved setting for future
+    setting1:       Mapped[str] = mapped_column(String(100), nullable=True)
