@@ -849,9 +849,9 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                 msg += f"- User: {ctx.guild.get_member(i.id).mention}\n"
             elif i.type == MRCTType.ROLE:
                 role: interactions.Role = await ctx.guild.fetch_role(i.id)
-                msg += f"- Role: {role.mention}\n"
+                msg += f"- Role: {role.mention}\n\t"
                 for u in role.members:
-                    msg += f"\t- User: {u.mention}\n"
+                    msg += f"- User: {u.mention}\n"
         cms: dict[int, list[ChannelModerator]] = {i.channel_id: [] for i in channel_moderators}
         for i in channel_moderators:
             cms[i.channel_id].append(i)
@@ -862,9 +862,9 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                     msg += f"- User: {ctx.guild.get_member(i.id).mention}\n"
                 elif i.type == MRCTType.ROLE:
                     role: interactions.Role = await ctx.guild.fetch_role(i.id)
-                    msg += f"- Role: {role.mention}\n"
+                    msg += f"- Role: {role.mention}\n\t"
                     for u in role.members:
-                        msg += f"\t- User: {u.mention}\n"
+                        msg += f"- User: {u.mention}\n"
         ps: dict[int, list[Prisoner]] = {i.channel_id: [] for i in prisoners}
         for i in prisoners:
             ps[i.channel_id].append(i)
