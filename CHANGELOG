@@ -64,3 +64,4 @@
     - Timeout Limit
 - Remove code duplication
 - Updated `README.md`
+- Update Summary command to show the global settings

@@ -397,6 +397,8 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
 
     async def send_log_channel(self, message: str, colour: int = 0) -> None:
         channel_config: Config = global_settings[SettingType.LOG_CHANNEL]
+        if channel_config.setting1 is None:
+            return
         guild: interactions.Guild = await self.bot.fetch_guild(int(channel_config.setting1))
         channel: interactions.MessageableMixin = await guild.fetch_channel(channel_config.setting)
         await channel.send(embed=interactions.Embed(
@@ -426,6 +428,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         """
         await self.update_global_setting(SettingType.MINUTE_LIMIT, minute)
         await ctx.send(f"Timeout Upper Limit is {minute} minutes!")
+        await self.send_log_channel(f"Timeout Upper Limit is {minute} minutes!")
 
     @module_group_setting.subcommand("log_channel", sub_cmd_description="Set the channel to output log")
     @interactions.slash_option(
@@ -490,9 +493,9 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             message: interactions.Message = ctx.message
             if not ga_cm:
                 channel: interactions.GuildChannel = ctx.channel if not hasattr(ctx.channel, "parent_channel") else ctx.channel.parent_channel
-            msg_to_send: str = "Added " + "" if ga_cm else channel.name +\
-                "Global Admin " if ga_cm else "Channel Moderator " +\
-                    "as a " + "user" if gaType == MRCTType.USER else "role" + ":"
+            msg_to_send: str = "Added " + "" if ga_cm else channel.name
+            msg_to_send += "Global Admin " if ga_cm else "Channel Moderator "
+            msg_to_send += "as a " + "user:" if gaType == MRCTType.USER else "role:"
             for value in ctx.values:
                 if gaType == MRCTType.USER:
                     value = cast(interactions.Member, value)
@@ -829,7 +832,11 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
 
     @module_group_setting.subcommand("summary", sub_cmd_description="View summary")
     async def module_group_setting_viewSummary(self, ctx: interactions.SlashContext) -> None:
-        msg: str = "Global Admins:\n"
+        channel_config: Config = global_settings[SettingType.LOG_CHANNEL]
+        minute_config: Config = global_settings[SettingType.MINUTE_LIMIT]
+        config_msg: str = "Log channel is " + "not set!" if channel_config.setting1 != str(ctx.guild.id) else ctx.guild.get_channel(int(channel_config.setting)).mention
+        config_msg += f"\nTimeout Limit is `{minute_config.setting} minutes`\n"
+        msg: str = config_msg + "\nGlobal Admins:\n"
         for i in global_admins:
             if i.type == MRCTType.USER:
                 msg += f"- User: {ctx.guild.get_member(i.id).mention}\n"
