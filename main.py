@@ -205,7 +205,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         for _ in SettingType:
             Config(_, 600, None).upsert(global_settings)
         for gs in gss:
-            Config(gs.type, gs.setting, gs.setting1).upsert(global_settings)
+            Config(gs[0].type, gs[0].setting, gs[0].setting1).upsert(global_settings)
         await self.async_start()
 
     async def async_start(self) -> None:
