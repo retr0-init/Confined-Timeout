@@ -478,7 +478,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                 )
                 await ctx.send("Set the global admin ROLE:", components=[component_role], ephemeral=True)
 
-    async def setGACM_component(self, ctx: interaction.ComponentContext, ga_cm: bool, gaType: MRCTType) -> None:
+    async def setGACM_component(self, ctx: interactions.ComponentContext, ga_cm: bool, gaType: MRCTType) -> None:
         """
         Component callback function
         ctx: ComponentContext   The component context
