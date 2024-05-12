@@ -590,7 +590,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
 
     @interactions.component_callback(CHANNEL_MODERATOR_ROLE_CUSTOM_ID)
     async def callback_setCM_component_role(self, ctx: interactions.ComponentContext) -> None:
-        await self.setGACM_component(ctx, False, MRCTType.USER)
+        await self.setGACM_component(ctx, False, MRCTType.ROLE)
 
     @module_group_setting.subcommand("remove_global_admin", sub_cmd_description="Remove the Global Admin")
     @interactions.slash_option(
