@@ -517,7 +517,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                             await conn.commit()
                         msg_to_send += f"\n- {value.display_name if gaType == MRCTType.USER else value.name} {value.mention}"
                 else:
-                    _to_add: ChannelModerator = ChannelModerator(user.id, gaType, channel.id)
+                    _to_add: ChannelModerator = ChannelModerator(value.id, gaType, channel.id)
                     if _to_add not in channel_moderators:
                         channel_moderators.append(_to_add)
                         async with Session() as conn:
