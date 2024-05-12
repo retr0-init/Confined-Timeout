@@ -120,8 +120,6 @@ channel_moderators: list[ChannelModerator] = []
 prisoners: list[Prisoner] = []
 prisoner_tasks: dict[tuple[int], asyncio.Task] = {}
 global_settings: list[Config] = []
-for _ in SettingType:
-    Config(_, 600, None).upsert(global_settings)
 
 async def my_admin_check(ctx: interactions.BaseContext) -> bool:
     '''
@@ -204,6 +202,8 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         global_admins = [GlobalAdmin(ga[0].id, ga[0].type) for ga in gas]
         channel_moderators = [ChannelModerator(cm[0].id, cm[0].type, cm[0].channel_id) for cm in cms]
         prisoners = [Prisoner(p[0].id, p[0].release_datetime, p[0].channel_id) for p in ps]
+        for _ in SettingType:
+            Config(_, 600, None).upsert(global_settings)
         for gs in gss:
             Config(gs.type, gs.setting, gs.setting1).upsert(global_settings)
         await self.async_start()
@@ -835,7 +835,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         channel_config: Config = global_settings[SettingType.LOG_CHANNEL]
         minute_config: Config = global_settings[SettingType.MINUTE_LIMIT]
         config_msg: str = "Log channel is "
-        config_msg += "not set!" if channel_config.setting1 != str(ctx.guild.id) else ctx.guild.get_channel(int(channel_config.setting)).mention
+        config_msg += "not set!" if str(ctx.guild.id) not in channel_config.setting1 else ctx.guild.get_channel(int(channel_config.setting)).mention
         config_msg += f"\nTimeout Limit is `{minute_config.setting} minutes`\n"
         msg: str = config_msg + "\nGlobal Admins:\n"
         for i in global_admins:
