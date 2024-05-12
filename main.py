@@ -223,7 +223,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             else:
                 task = asyncio.create_task(self.release_prisoner_task(duration_minutes=duration_minutes, prisoner=p))
                 prisoner_tasks[p.to_tuple()] = task
-                task.add_done_callback(lambda:prisoner_tasks.pop(p.to_tuple()))
+                task.add_done_callback(lambda x:prisoner_tasks.pop(p.to_tuple()))
     
     def drop(self):
         asyncio.create_task(self.async_drop())
