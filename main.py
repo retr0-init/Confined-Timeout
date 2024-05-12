@@ -890,7 +890,6 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
     @interactions.check(my_channel_moderator_check)
     async def module_base_timeout(self, ctx: interactions.SlashContext, user: interactions.User, minutes: int) -> None:
         channel: interactions.GuildChannel = ctx.channel if not hasattr(ctx.channel, "parent_channel") else ctx.channel.parent_channel
-        await ctx.defer()
         success: bool = await self.jail_prisoner(user, minutes, channel, ctx=ctx)
     
     async def cmd_timeout(self, ctx: interactions.ContextMenuContext, is_msg: bool):
@@ -917,7 +916,6 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         except ValueError:
             await modal_ctx.send("The input is not integer!", ephemeral=True)
             return
-        await modal_ctx.defer()
         success: bool = await self.jail_prisoner(user, minutes, channel, ctx=modal_ctx, reason=msg.content if is_msg else "")
 
     @interactions.user_context_menu("Confined Timeout User")
