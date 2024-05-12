@@ -922,11 +922,11 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
 
     @interactions.user_context_menu("Confined Timeout User")
     async def contextmenu_usr_timeout(self, ctx: interactions.ContextMenuContext) -> None:
-        self.cmd_timeout(ctx, is_msg=False)
+        await self.cmd_timeout(ctx, is_msg=False)
 
     @interactions.message_context_menu("Confined Timeout Msg")
     async def contextmenu_msg_timeout(self, ctx: interactions.ContextMenuContext) -> None:
-        self.cmd_timeout(ctx, is_msg=True)
+        await self.cmd_timeout(ctx, is_msg=True)
     
     async def cmd_release(
         self,
