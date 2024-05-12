@@ -218,7 +218,6 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             duration_minutes: int = (p.release_datetime.replace(tzinfo=None) - cdt).total_seconds() / 60
             if duration_minutes <= 0:
                 # Release the prinsoner
-                await self.send_log_channel("Already meet")
                 await self.release_prinsoner(p)
             else:
                 task = asyncio.create_task(self.release_prisoner_task(duration_minutes=duration_minutes, prisoner=p))
