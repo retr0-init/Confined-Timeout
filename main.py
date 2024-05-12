@@ -226,6 +226,9 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
     
     def drop(self):
         asyncio.create_task(self.async_drop())
+        for i, task in prisoner_tasks.items():
+            task.cancel()
+        prisoner_tasks.clear()
         super().drop()
     
     async def async_drop(self):
