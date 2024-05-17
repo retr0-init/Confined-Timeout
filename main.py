@@ -294,7 +294,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                         PrisonerDB.channel_id == prisoner.channel_id
                     ))
                 )
-            await session.commit()
+                await session.commit()
         if ctx is not None:
             await ctx.send(f"The prisoner {ctx.guild.get_member(prisoner.id).mention} is released!")
             await self.send_log_channel(f"The prisoner {ctx.guild.get_member(prisoner.id).mention} is released!", int("00FF00", 16))
@@ -651,22 +651,22 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                             GlobalAdminDB.type == ga.type
                         ))
                     )
-            if role is not None:
-                ga: GlobalAdmin = GlobalAdmin(role, MRCTType.ROLE)
-                ga_mention: str = ctx.guild.get_role(ga.id).mention
-                if ga not in global_admins:
-                    await ctx.send(f"{ga_mention} is not a global admin role!", silent=True)
-                    return
-                msg += f"\n- {ga_mention}"
-                global_admins.remove(ga)
-                await session.execute(
-                    sqldelete(GlobalAdminDB).
-                    where(sqlalchemy.and_(
-                        GlobalAdminDB.id == ga.id,
-                        GlobalAdminDB.type == ga.type
-                    ))
-                )
-            await session.commit()
+                if role is not None:
+                    ga: GlobalAdmin = GlobalAdmin(role, MRCTType.ROLE)
+                    ga_mention: str = ctx.guild.get_role(ga.id).mention
+                    if ga not in global_admins:
+                        await ctx.send(f"{ga_mention} is not a global admin role!", silent=True)
+                        return
+                    msg += f"\n- {ga_mention}"
+                    global_admins.remove(ga)
+                    await session.execute(
+                        sqldelete(GlobalAdminDB).
+                        where(sqlalchemy.and_(
+                            GlobalAdminDB.id == ga.id,
+                            GlobalAdminDB.type == ga.type
+                        ))
+                    )
+                await session.commit()
         # Get user and role objects to get name and mention
         user: Optional[interactions.User] = ctx.guild.get_member(user) if user is not None else None
         role: Optional[interactions.Role] = ctx.guild.get_role(role) if role is not None else None
@@ -759,23 +759,23 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                             ModeratorDB.channel_id == cm.channel_id
                         ))
                     )
-            if role is not None:
-                cm: ChannelModerator = ChannelModerator(role, MRCTType.ROLE, channel.id)
-                cm_mention: str = ctx.guild.get_role(cm.id).mention
-                if cm not in channel_moderators:
-                    await ctx.send(f"{cm_mention} is not the moderator role of this channel {channel.mention}!", silent=True)
-                    return
-                msg += f"\n- {cm_mention}"
-                channel_moderators.remove(cm)
-                await session.execute(
-                    sqldelete(ModeratorDB).
-                    where(sqlalchemy.and_(
-                        ModeratorDB.id == cm.id,
-                        ModeratorDB.type == cm.type,
-                        ModeratorDB.channel_id == cm.channel_id
-                    ))
-                )
-            await session.commit()
+                if role is not None:
+                    cm: ChannelModerator = ChannelModerator(role, MRCTType.ROLE, channel.id)
+                    cm_mention: str = ctx.guild.get_role(cm.id).mention
+                    if cm not in channel_moderators:
+                        await ctx.send(f"{cm_mention} is not the moderator role of this channel {channel.mention}!", silent=True)
+                        return
+                    msg += f"\n- {cm_mention}"
+                    channel_moderators.remove(cm)
+                    await session.execute(
+                        sqldelete(ModeratorDB).
+                        where(sqlalchemy.and_(
+                            ModeratorDB.id == cm.id,
+                            ModeratorDB.type == cm.type,
+                            ModeratorDB.channel_id == cm.channel_id
+                        ))
+                    )
+                await session.commit()
         # Get user and role objects to get name and mention
         user: Optional[interactions.User] = ctx.guild.get_member(user) if user is not None else None
         role: Optional[interactions.Role] = ctx.guild.get_role(role) if role is not None else None
