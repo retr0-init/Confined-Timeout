@@ -214,7 +214,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         if self.startup_flag:
             return
         self.startup_flag = True
-        await asyncio.sleep(30)
+        await self.bot.wait_until_ready()
         cdt: datetime.datetime = datetime.datetime.now()
         for p in prisoners:
             duration_minutes: int = (p.release_datetime.replace(tzinfo=None) - cdt).total_seconds() / 60
