@@ -66,3 +66,6 @@
 - Updated `README.md`
 - Update Summary command to show the global settings
 - Added asyncio lock
+
+# 20240517
+- Bug fixes
