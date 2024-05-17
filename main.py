@@ -856,7 +856,8 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         for i in ps_in_channel:
             timeleft: datetime.timedelta = i.release_datetime.replace(tzinfo=None) - datetime.datetime.now()
             msg += f"- {ctx.guild.get_member(i.id).mention} `{timeleft.total_seconds() / 60:.2f} minutes left`\n"
-        await ctx.send(msg, silent=True)
+        pag: Paginator = Paginator.create_from_string(self.bot, msg, page_size=2000, timeout=10)
+        await pag.send(ctx)
 
     @module_group_setting.subcommand("summary", sub_cmd_description="View summary")
     async def module_group_setting_viewSummary(self, ctx: interactions.SlashContext) -> None:
