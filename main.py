@@ -884,7 +884,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             for i in pls:
                 timeleft: datetime.timedelta = i.release_datetime.replace(tzinfo=None) - datetime.datetime.now()
                 timestring: str = f"{timeleft.total_seconds() / 60:.2f} minutes"
-                msg += f"- {ctx.guild.get_member(i.id).mention} `{timestring} left`"
+                msg += f"- {ctx.guild.get_member(i.id).mention} `{timestring} left`\n"
         pag: Paginator = Paginator.create_from_string(self.bot, f"Summary for Confined Timeout:\n\n{msg}", page_size=1000)
         await pag.send(ctx)
     
