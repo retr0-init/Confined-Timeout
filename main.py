@@ -851,10 +851,9 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
     async def module_base_view_prisoner(self, ctx: interactions.SlashContext) -> None:
         pass
         channel: interactions.GuildChannel = ctx.channel if not hasattr(ctx.channel, "parent_channel") else ctx.channel.parent_channel
-        msg: str = f"Prisoners in {channel.mention}:\n" if len(prisoners) > 0 else f"No prisoners in {channel.mention}!"
-        for i in prisoners:
-            if i.channel_id != channel.id:
-                continue
+        ps_in_channel: list[Prisoner] = [i for i in prisoners if i.channel_id == channel.id]
+        msg: str = f"Prisoners in {channel.mention}:\n" if len(ps_in_channel) > 0 else f"No prisoners in {channel.mention}"
+        for i in ps_in_channel:
             timeleft: datetime.timedelta = i.release_datetime.replace(tzinfo=None) - datetime.datetime.now()
             msg += f"- {ctx.guild.get_member(i.id).mention} `{timeleft.total_seconds() / 60:.2f} minutes left`\n"
         await ctx.send(msg, silent=True)
