@@ -504,7 +504,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             message: interactions.Message = ctx.message
             if not ga_cm:
                 channel: interactions.GuildChannel = ctx.channel if not hasattr(ctx.channel, "parent_channel") else ctx.channel.parent_channel
-            msg_to_send: str = "Added " if ga_cm else f"Added {channel.name}"
+            msg_to_send: str = "Added " if ga_cm else f"Added {channel.mention} "
             msg_to_send += "Global Admin " if ga_cm else "Channel Moderator "
             msg_to_send += "as a user:" if gaType == MRCTType.USER else "as a role:"
             for value in ctx.values:
