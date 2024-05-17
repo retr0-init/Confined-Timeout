@@ -32,6 +32,7 @@
     - 信息菜单，弹窗输入信息
 - `/confined_timeout release <Member>`
     - 用户菜单
+- `/confined_timeout view_prisoners`
 
 # Confined Timeout
 It allows certain members or roles able to timeout a member in certain channels. In the other words, the affected members cannot send message only in this channel.
@@ -64,3 +65,4 @@ In contrast:
     - Message Context Menu, modal window to enter details. Message as the reason.
 - `/confined_timeout release <Member>`
     - User Context Menu
+- `/confined_timeout view_prisoners`

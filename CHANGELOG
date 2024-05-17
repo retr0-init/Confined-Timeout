@@ -70,3 +70,5 @@
 # 20240517
 - Bug fixes
 - Fix indention problem
+- Added Prisoner view function
+- Updated README.md

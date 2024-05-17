@@ -847,6 +847,18 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         pag: Paginator = Paginator.create_from_string(self.bot, f"Moderators in {channel.mention} for Confined Timeout:\n{msg}", page_size=1000)
         await pag.send(ctx)
 
+    @module_base.subcommand("view_prisoners", sub_cmd_description="View Prisoners in this channel")
+    async def module_base_view_prisoner(self, ctx: interactions.SlashContext) -> None:
+        pass
+        channel: interactions.GuildChannel = ctx.channel if not hasattr(ctx.channel, "parent_channel") else ctx.channel.parent_channel
+        msg: str = f"Prisoners in {channel.mention}:\n" if len(prisoners) > 0 else f"No prisoners in {channel.mention}!"
+        for i in prisoners:
+            if i.channel_id != channel.id:
+                continue
+            timeleft: datetime.timedelta = i.release_datetime.replace(tzinfo=None) - datetime.datetime.now()
+            msg += f"- {ctx.guild.get_member(i.id).mention} `{timeleft.total_seconds() / 60:.2f} minutes left`\n"
+        await ctx.send(msg, silent=True)
+
     @module_group_setting.subcommand("summary", sub_cmd_description="View summary")
     async def module_group_setting_viewSummary(self, ctx: interactions.SlashContext) -> None:
         channel_config: Config = global_settings[SettingType.LOG_CHANNEL]
