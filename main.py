@@ -333,6 +333,21 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                 await ctx.send("You cannot jail channel moderator!", ephemeral=True)
             return False
 
+        # Do not jail global admin themselves
+        gadmin_user: GlobalAdmin = GlobalAdmin(
+            prisoner_member.id,
+            MRCTType.USER
+        )
+        res_role: bool = gadmin_user in global_admins
+        res_role: bool = any(map(
+            lambda x: prisoner_member.has_role(x.id) if x.type == MRCTType.ROLE else False,
+            global_admins
+        ))
+        if res_user or res_role:
+            if ctx is not None:
+                await ctx.send("You cannot jail global admin!", ephemeral=True)
+            return False
+
         # Test whether the jail duration is above the upper limit
         minute_limit: int = global_settings[SettingType.MINUTE_LIMIT].setting
         if duration_minutes > minute_limit:

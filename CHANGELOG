@@ -72,3 +72,6 @@
 - Fix indention problem
 - Added Prisoner view function
 - Updated README.md
+
+# 20240518
+- Make it cannot jail global admins
