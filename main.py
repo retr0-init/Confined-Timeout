@@ -338,7 +338,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             prisoner_member.id,
             MRCTType.USER
         )
-        res_role: bool = gadmin_user in global_admins
+        res_user: bool = gadmin_user in global_admins
         res_role: bool = any(map(
             lambda x: prisoner_member.has_role(x.id) if x.type == MRCTType.ROLE else False,
             global_admins
