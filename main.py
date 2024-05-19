@@ -415,8 +415,10 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                 ))
                 await session.commit()
         if ctx is not None:
-            await ctx.send(f"{prisoner_member.mention} is jailed for {duration_minutes} minutes", silent=True)
-        await self.send_log_channel(f"{prisoner_member.mention} is jailed for {duration_minutes} minutes in {channel.mention}. Reason: {'None' if len(reason) == 0 else reason[:50] if len(reason) > 51 else reason}", int("FFFF00", 16))
+            await ctx.send(f"{prisoner_member.mention} is jailed for {duration_minutes} minutes. Reason: {'None' if len(reason) == 0 else reason[:50]+'...' if len(reason) > 51 else reason}", silent=True)
+        else:
+            await channel.send(f"{prisoner_member.mention} is jailed for {duration_minutes} minutes in {channel.mention}. Reason: {'None' if len(reason) == 0 else reason[:50]+'...' if len(reason) > 51 else reason}", silent=True)
+        await self.send_log_channel(f"{prisoner_member.mention} is jailed for {duration_minutes} minutes in {channel.mention}. Reason: {'None' if len(reason) == 0 else reason[:50]+'...' if len(reason) > 51 else reason}", int("FFFF00", 16))
         # Wait for a certain number of time and unblock the member
         task = asyncio.create_task(self.release_prisoner_task(duration_minutes=duration_minutes, prisoner=prisoner, ctx=ctx))
         prisoner_tasks[prisoner.to_tuple()] = task
