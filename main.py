@@ -850,7 +850,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                 role: interactions.Role = await ctx.guild.fetch_role(i.id)
                 msg += f"- Role: {role.mention}\n"
                 for u in role.members:
-                    msg += f"\t- User: {u.mention}\n"
+                    msg += f"  - User: {u.mention}\n"
         pag: Paginator = Paginator.create_from_string(self.bot, f"Global Admin for Confined Timeout:\n{msg}", page_size=1000)
         await pag.send(ctx)
     
@@ -867,7 +867,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                 role: interactions.Role = await ctx.guild.fetch_role(i.id)
                 msg += f"- Role: {role.mention}\n"
                 for u in role.members:
-                    msg += f"\t- User: {u.mention}\n"
+                    msg += f"  - User: {u.mention}\n"
         pag: Paginator = Paginator.create_from_string(self.bot, f"Moderators in {channel.mention} for Confined Timeout:\n{msg}", page_size=1000)
         await pag.send(ctx)
 

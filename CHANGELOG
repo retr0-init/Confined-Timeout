@@ -79,3 +79,4 @@
 
 # 20240519
 - Send release message to the jailed channel without mentioning member
+- Fix view command indention issue
