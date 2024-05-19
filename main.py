@@ -21,11 +21,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #WARNING Modify the original library code: https://github.com/interactions-py/interactions.py/pull/1654
 import interactions
 from interactions.ext.paginators import Paginator
+from interactions.api.events import MemberAdd, MemberRemove
 # Import the os module to get the parent path to the local files
 import os
 # aiofiles module is recommended for file operation
 import aiofiles
 import asyncio
+
+import math
 
 from enum import Enum, unique
 from dataclasses import dataclass
@@ -445,7 +448,29 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         pass
 
     ################ Utility functions FINISH ################
+
     ##########################################################
+
+    ################ Eventsl functions STARTS ################
+
+    @interactions.listen(MemberAdd)
+    async def __event_memberadd(self, event: MemberAdd) -> None:
+        """
+        Re-jail the prisoners who left the guild
+        """
+        cdt: datetime.datetime = datetime.datetime.now()
+        cps: list[Prisoner] = [p for p in prisoners if p.id == event.member.id]
+        for cp in cps:
+            duration_minutes: int = (cp.release_datetime.replace(tzinfo=None) - cdt).total_seconds() / 60
+            duration_minutes = math.ceil(duration_minutes) if duration_minutes > 0 else 1
+            channel: interactions.GuildChannel = await event.guild.fetch_channel(cp.channel_id)
+            await self.release_prinsoner(cp)
+            await self.jail_prisoner(event.member, duration_minutes, channel, reason="Re-jail escaped member")
+
+    ################ Eventsl functions STARTS ################
+
+    ##########################################################
+
     ################ Command functions STARTS ################
 
     @module_group_setting.subcommand("limit", sub_cmd_description="Set the minute timeout limitation")
