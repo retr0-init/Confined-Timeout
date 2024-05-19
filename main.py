@@ -296,11 +296,20 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
                 )
                 await session.commit()
         if ctx is not None:
-            await ctx.send(f"The prisoner {ctx.guild.get_member(prisoner.id).mention} is released in {channel.mention}!")
-            await self.send_log_channel(f"The prisoner {ctx.guild.get_member(prisoner.id).mention} is released in {channel.mention}!", int("00FF00", 16))
+            msg: str = f"The prisoner {ctx.guild.get_member(prisoner.id).mention} is released in {channel.mention}!"
+            await ctx.send(embed=interactions.Embed(
+                title="Confined Timeout", description=msg, color=int("00FF00", 16)))
+            await self.send_log_channel(msg, int("00FF00", 16))
         else:
             if global_settings[SettingType.LOG_CHANNEL].setting1 is not None:
-                await self.send_log_channel(f"The prisoner {self.bot.get_guild(int(global_settings[SettingType.LOG_CHANNEL].setting1)).get_member(prisoner.id).mention} is released in {channel.mention}!", int("00FF00", 16))
+                g: interactions.Guild = self.bot.get_guild(int(global_settings[SettingType.LOG_CHANNEL].setting1))
+                msg: str = f"The prisoner {g.get_member(prisoner.id).mention} is released in {channel.mention}!"
+                await self.send_log_channel(msg, int("00FF00", 16))
+                await g.get_channel(prisoner.channel_id).send(
+                    embed=interactions.Embed(
+                        title="Confined Timeout",
+                        description=msg,
+                        color=int("00FF00", 16)))
 
     def check_prisoner(self, prisoner_member: interactions.Member, duration_minutes: int, channel: Union[interactions.GuildChannel, interactions.ThreadChannel]) -> tuple[bool, Prisoner]:
         channel_id: int = channel.id if not hasattr(channel, "parent_channel") else channel.parent_channel.id

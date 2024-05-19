@@ -76,3 +76,6 @@
 # 20240518
 - Make it cannot jail global admins
 - Added channel mention in release message
+
+# 20240519
+- Send release message to the jailed channel without mentioning member
