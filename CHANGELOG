@@ -75,3 +75,4 @@
 
 # 20240518
 - Make it cannot jail global admins
+- Added channel mention in release message
