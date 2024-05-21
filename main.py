@@ -997,10 +997,12 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         success: bool = await self.jail_prisoner(user, minutes, channel, ctx=modal_ctx, reason=msg.content if is_msg else "")
 
     @interactions.user_context_menu("Confined Timeout User")
+    @interactions.check(my_channel_moderator_check)
     async def contextmenu_usr_timeout(self, ctx: interactions.ContextMenuContext) -> None:
         await self.cmd_timeout(ctx, is_msg=False)
 
     @interactions.message_context_menu("Confined Timeout Msg")
+    @interactions.check(my_channel_moderator_check)
     async def contextmenu_msg_timeout(self, ctx: interactions.ContextMenuContext) -> None:
         await self.cmd_timeout(ctx, is_msg=True)
     
@@ -1065,5 +1067,6 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         )
     
     @interactions.user_context_menu("Confined Release")
+    @interactions.check(my_channel_moderator_check)
     async def contextmenu_usr_release(self, ctx: interactions.ContextMenuContext) -> None:
         await self.cmd_release(ctx, is_cmd=False, user=ctx.target.id)
