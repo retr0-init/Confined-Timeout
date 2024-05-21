@@ -85,3 +85,4 @@
 # 20240521
 - Fix modal title length
 - Fix context menu permission issue
+- Add log channel setting permission

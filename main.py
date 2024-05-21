@@ -499,6 +499,7 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         required = True,
         opt_type = interactions.OptionType.CHANNEL
     )
+    @interactions.check(my_admin_check)
     async def module_group_setting_setLogChannel(self, ctx: interactions.SlashContext, channel: interactions.GuildChannel) -> None:
         """
         Set the channel to log the moduel actions
