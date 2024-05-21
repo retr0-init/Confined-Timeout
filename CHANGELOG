@@ -81,3 +81,6 @@
 - Send release message to the jailed channel without mentioning member
 - Fix view command indention issue
 - Re-jail the prisoners who left the guild
+
+# 20240521
+- Fix modal title length

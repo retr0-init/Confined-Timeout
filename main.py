@@ -981,9 +981,10 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
             user: interactions.Member = msg.author
         else:
             user: interactions.Member = ctx.target
+        __t_func = lambda x, y: x if len(x) < y else f"{x[:y-3]}..."
         modal: interactions.Modal = interactions.Modal(
             interactions.ShortText(label="Minutes to timeout. Integer, e.g. 10"),
-            title=f"Timeout {user.id} in {channel.name}"
+            title=f"Timeout {__t_func(user.display_name, 15)} in {__t_func(channel.name, 15)}"
         )
         await ctx.send_modal(modal=modal)
         modal_ctx: interactions.ModalContext = await ctx.bot.wait_for_modal(modal)
