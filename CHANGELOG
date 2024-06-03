@@ -86,3 +86,6 @@
 - Fix modal title length
 - Fix context menu permission issue
 - Add log channel setting permission
+
+# 20240603
+- Summary information skip deleted channels

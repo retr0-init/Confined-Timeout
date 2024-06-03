@@ -931,6 +931,8 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         for i in channel_moderators:
             cms[i.channel_id].append(i)
         for cid, cmls in cms.items():
+            if ctx.guild.get_channel(cid) is None:
+                continue
             msg += f"\nModerator in {ctx.guild.get_channel(cid).mention}:\n"
             for i in cmls:
                 if i.type == MRCTType.USER:
@@ -944,6 +946,8 @@ class ModuleRetr0initConfinedTimeout(interactions.Extension):
         for i in prisoners:
             ps[i.channel_id].append(i)
         for cid, pls in ps.items():
+            if ctx.guild.get_channel(cid) is None:
+                continue
             msg += f"\nPrisoners in {ctx.guild.get_channel(cid).mention}:\n"
             for i in pls:
                 timeleft: datetime.timedelta = i.release_datetime.replace(tzinfo=None) - datetime.datetime.now()
